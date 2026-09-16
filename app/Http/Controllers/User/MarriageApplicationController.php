@@ -1,0 +1,399 @@
+<?php
+
+namespace App\Http\Controllers\User;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Models\MarriageApplication;
+use App\Models\MarriagePartner;
+use App\Models\MarriageStatusHistory;
+
+class MarriageApplicationController extends Controller
+{
+    // ─── Required documents definition ─────────────────
+    const DOCS_ANGGOTA = [
+        'Surat Permohonan Izin Nikah',
+        'Surat NA/Pengantar Nikah',
+        'Hasil Rikes Kesdam III/Siliwangi',
+        'Hasil Rikes/Pemeriksaan Bintaldam III/Siliwangi',
+        'Sertifikat Lolos Litpers dari Kabangpam Puskomlekad',
+        'SKCK Orang Tua',
+    ];
+
+    const DOCS_PASANGAN = [
+        'Surat Persetujuan Orang Tua/Wali diketahui Lurah/Desa',
+        'Surat Kesanggupan Calon Suami/Istri diketahui Lurah/Desa',
+        'Surat Keterangan Orang Tua/Wali',
+        'Surat Keterangan usia calon suami/istri',
+        'NA/Pengantar Nikah dari Desa',
+        'Litpers calon pasangan dan orang tuanya dari Koramil',
+        'SKCK dari Kepolisian',
+        'Fotokopi KK',
+        'Fotokopi Akta Kelahiran',
+        'Fotokopi KTP',
+        'Fotokopi Ijazah terakhir',
+        'Pas foto berwarna background biru ukuran 9x6 cm',
+        'Pas foto berwarna background biru ukuran 4x6 cm',
+    ];
+
+    const DOCS_PASANGAN_ASN = 'Surat Keterangan Dinas dari instansi';
+
+    // ─── Normalize jenis_kelamin and resolve roles ──────
+    private function resolvePeran(?string $jenisKelamin): array
+    {
+        if ($jenisKelamin === 'Pria') {
+            return ['suami', 'istri', 'Wanita'];
+        }
+        if ($jenisKelamin === 'Wanita') {
+            return ['istri', 'suami', 'Pria'];
+        }
+        return [null, null, null];
+    }
+
+    // ─── index ───────────────────────────────────────────
+    public function index()
+    {
+        $applications = Auth::user()
+            ->marriageApplications()
+            ->with('partner')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('user.marriage_applications.index', compact('applications'));
+    }
+
+    public function create()
+    {
+        $user = Auth::user();
+        $personel = $user->personel;
+
+        if (!$personel) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Akun Anda belum terhubung dengan data Personel. Silakan hubungi Admin Personalia.');
+        }
+
+        if (empty($personel->jenis_kelamin)) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap. Silakan hubungi Admin Personalia.');
+        }
+
+        [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
+
+        if (!$peranAnggota) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Nilai jenis kelamin Personel tidak valid. Harap hubungi Admin Personalia.');
+        }
+
+        return view('user.marriage_applications.create', compact('personel', 'peranAnggota', 'peranPasangan', 'genderPasangan'));
+    }
+
+    // ─── saveDraft ───────────────────────────────────────
+    public function saveDraft(Request $request)
+    {
+        $user = Auth::user();
+        $personel = $user->personel;
+
+        if (!$personel) {
+            return redirect()->route('user.dashboard')->with('error', 'Akun Anda belum terhubung dengan data Personel.');
+        }
+
+        if (empty($personel->jenis_kelamin)) {
+            return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap.');
+        }
+
+        [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
+        if (!$peranAnggota) {
+            return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin Personel tidak valid.');
+        }
+
+        $application = MarriageApplication::create([
+            'user_id'              => $user->id,
+            'personel_id'          => $personel->id,
+            'jenis_kelamin_anggota'=> $personel->jenis_kelamin,
+            'peran_anggota'        => $peranAnggota,
+            'tanggal_pengajuan'    => now(),
+            'tanggal_rencana_nikah'=> $request->tanggal_rencana_nikah ?: now()->addMonth(),
+            'tempat_nikah'         => $request->tempat_nikah ?: '-',
+            'alamat_nikah'         => $request->alamat_nikah ?: '-',
+            'kelurahan_nikah'      => $request->kelurahan_nikah ?: '-',
+            'kecamatan_nikah'      => $request->kecamatan_nikah ?: '-',
+            'kabupaten_nikah'      => $request->kabupaten_nikah ?: '-',
+            'provinsi_nikah'       => $request->provinsi_nikah ?: '-',
+            'status'               => 'DRAFT',
+        ]);
+
+        // Save partner data if partial is provided
+        if ($request->filled('pasangan_nama')) {
+            MarriagePartner::create([
+                'marriage_application_id' => $application->id,
+                'peran'           => $peranPasangan,
+                'nama'            => $request->pasangan_nama ?: '-',
+                'tempat_lahir'    => $request->pasangan_tempat_lahir ?: '-',
+                'tanggal_lahir'   => $request->pasangan_tanggal_lahir ?: now(),
+                'pekerjaan'       => $request->pasangan_pekerjaan ?: '-',
+                'status_pekerjaan'=> $request->pasangan_status_pekerjaan ?: 'Non-ASN',
+                'instansi'        => $request->pasangan_instansi,
+                'jabatan'         => $request->pasangan_jabatan,
+                'agama'           => $request->pasangan_agama ?: '-',
+                'suku'            => $request->pasangan_suku ?: '-',
+                'alamat'          => $request->pasangan_alamat ?: '-',
+                'kelurahan'       => $request->pasangan_kelurahan ?: '-',
+                'kecamatan'       => $request->pasangan_kecamatan ?: '-',
+                'kabupaten'       => $request->pasangan_kabupaten ?: '-',
+                'provinsi'        => $request->pasangan_provinsi ?: '-',
+                'bapak_nama'      => $request->bapak_nama ?: '-',
+                'bapak_agama'     => $request->bapak_agama ?: '-',
+                'bapak_pekerjaan' => $request->bapak_pekerjaan ?: '-',
+                'bapak_alamat'    => $request->bapak_alamat ?: '-',
+                'ibu_nama'        => $request->ibu_nama ?: '-',
+                'ibu_agama'       => $request->ibu_agama ?: '-',
+                'ibu_pekerjaan'   => $request->ibu_pekerjaan ?: '-',
+                'ibu_alamat'      => $request->ibu_alamat ?: '-',
+            ]);
+        }
+
+        MarriageStatusHistory::create([
+            'marriage_application_id' => $application->id,
+            'status'     => 'DRAFT',
+            'catatan'    => 'Draft pengajuan nikah disimpan oleh anggota.',
+            'changed_by' => $user->id,
+        ]);
+
+        return redirect()->route('user.pengajuan_nikah.show', $application->id)
+            ->with('success', 'Draft berhasil disimpan. Lengkapi data sebelum mengajukan ke Admin.');
+    }
+
+    // ─── store (final submit) ────────────────────────────
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        $personel = $user->personel;
+
+        if (!$personel) {
+            return redirect()->route('user.dashboard')->with('error', 'Akun Anda belum terhubung dengan data Personel.');
+        }
+
+        if (empty($personel->jenis_kelamin)) {
+            return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap.');
+        }
+
+        [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
+        if (!$peranAnggota) {
+            return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin Personel tidak valid.');
+        }
+
+        $validated = $request->validate([
+            // Pernikahan
+            'tanggal_rencana_nikah' => 'required|date',
+            'tempat_nikah'          => 'required|string|max:255',
+            'alamat_nikah'          => 'required|string|max:500',
+            'kelurahan_nikah'       => 'required|string|max:100',
+            'kecamatan_nikah'       => 'required|string|max:100',
+            'kabupaten_nikah'       => 'required|string|max:100',
+            'provinsi_nikah'        => 'required|string|max:100',
+            // Pasangan
+            'pasangan_nama'             => 'required|string|max:255',
+            'pasangan_tempat_lahir'     => 'required|string|max:100',
+            'pasangan_tanggal_lahir'    => 'required|date',
+            'pasangan_pekerjaan'        => 'required|string|max:255',
+            'pasangan_status_pekerjaan' => 'required|in:ASN,Non-ASN',
+            'pasangan_instansi'         => 'nullable|required_if:pasangan_status_pekerjaan,ASN|string|max:255',
+            'pasangan_jabatan'          => 'nullable|required_if:pasangan_status_pekerjaan,ASN|string|max:255',
+            'pasangan_agama'            => 'required|string|max:100',
+            'pasangan_suku'             => 'required|string|max:100',
+            'pasangan_alamat'           => 'required|string|max:500',
+            'pasangan_kelurahan'        => 'required|string|max:100',
+            'pasangan_kecamatan'        => 'required|string|max:100',
+            'pasangan_kabupaten'        => 'required|string|max:100',
+            'pasangan_provinsi'         => 'required|string|max:100',
+            // Orang Tua
+            'bapak_nama'      => 'required|string|max:255',
+            'bapak_agama'     => 'required|string|max:100',
+            'bapak_pekerjaan' => 'required|string|max:255',
+            'bapak_alamat'    => 'required|string|max:500',
+            'ibu_nama'        => 'required|string|max:255',
+            'ibu_agama'       => 'required|string|max:100',
+            'ibu_pekerjaan'   => 'required|string|max:255',
+            'ibu_alamat'      => 'required|string|max:500',
+        ]);
+
+        $application = MarriageApplication::create([
+            'user_id'               => $user->id,
+            'personel_id'           => $personel->id,
+            'jenis_kelamin_anggota' => $personel->jenis_kelamin,
+            'peran_anggota'         => $peranAnggota,
+            'tanggal_pengajuan'     => now(),
+            'tanggal_rencana_nikah' => $validated['tanggal_rencana_nikah'],
+            'tempat_nikah'          => $validated['tempat_nikah'],
+            'alamat_nikah'          => $validated['alamat_nikah'],
+            'kelurahan_nikah'       => $validated['kelurahan_nikah'],
+            'kecamatan_nikah'       => $validated['kecamatan_nikah'],
+            'kabupaten_nikah'       => $validated['kabupaten_nikah'],
+            'provinsi_nikah'        => $validated['provinsi_nikah'],
+            'status'                => 'DIAJUKAN',
+        ]);
+
+        MarriagePartner::create([
+            'marriage_application_id' => $application->id,
+            'peran'            => $peranPasangan,
+            'nama'             => $validated['pasangan_nama'],
+            'tempat_lahir'     => $validated['pasangan_tempat_lahir'],
+            'tanggal_lahir'    => $validated['pasangan_tanggal_lahir'],
+            'pekerjaan'        => $validated['pasangan_pekerjaan'],
+            'status_pekerjaan' => $validated['pasangan_status_pekerjaan'],
+            'instansi'         => $request->pasangan_instansi,
+            'jabatan'          => $request->pasangan_jabatan,
+            'agama'            => $validated['pasangan_agama'],
+            'suku'             => $validated['pasangan_suku'],
+            'alamat'           => $validated['pasangan_alamat'],
+            'kelurahan'        => $validated['pasangan_kelurahan'],
+            'kecamatan'        => $validated['pasangan_kecamatan'],
+            'kabupaten'        => $validated['pasangan_kabupaten'],
+            'provinsi'         => $validated['pasangan_provinsi'],
+            'bapak_nama'       => $validated['bapak_nama'],
+            'bapak_agama'      => $validated['bapak_agama'],
+            'bapak_pekerjaan'  => $validated['bapak_pekerjaan'],
+            'bapak_alamat'     => $validated['bapak_alamat'],
+            'ibu_nama'         => $validated['ibu_nama'],
+            'ibu_agama'        => $validated['ibu_agama'],
+            'ibu_pekerjaan'    => $validated['ibu_pekerjaan'],
+            'ibu_alamat'       => $validated['ibu_alamat'],
+        ]);
+
+        MarriageStatusHistory::create([
+            'marriage_application_id' => $application->id,
+            'status'     => 'DIAJUKAN',
+            'catatan'    => 'Pengajuan nikah disubmit oleh anggota dan menunggu verifikasi Admin.',
+            'changed_by' => $user->id,
+        ]);
+
+        return redirect()->route('user.pengajuan_nikah.show', $application->id)
+            ->with('success', 'Pengajuan berhasil dibuat dengan status DIAJUKAN. Segera unggah dokumen persyaratan.');
+    }
+
+    // ─── submit (DRAFT → DIAJUKAN) ───────────────────────
+    public function submit(Request $request, $id)
+    {
+        $application = Auth::user()->marriageApplications()->with(['partner', 'documents'])->findOrFail($id);
+
+        if ($application->status !== 'DRAFT') {
+            return redirect()->back()->with('error', 'Hanya pengajuan berstatus DRAFT yang dapat disubmit.');
+        }
+
+        if (!$application->partner) {
+            return redirect()->back()->with('error', 'Data pasangan belum diisi. Lengkapi form sebelum mengajukan.');
+        }
+
+        $application->update(['status' => 'DIAJUKAN']);
+
+        MarriageStatusHistory::create([
+            'marriage_application_id' => $application->id,
+            'status'     => 'DIAJUKAN',
+            'catatan'    => 'Pengajuan disubmit ke Admin untuk diverifikasi.',
+            'changed_by' => Auth::id(),
+        ]);
+
+        return redirect()->route('user.pengajuan_nikah.show', $application->id)
+            ->with('success', 'Pengajuan berhasil disubmit. Admin akan segera memverifikasi dokumen Anda.');
+    }
+
+    // ─── show ────────────────────────────────────────────
+    public function show($id)
+    {
+        $application = Auth::user()
+            ->marriageApplications()
+            ->with(['partner', 'documents', 'statusHistories.changer', 'letters'])
+            ->findOrFail($id);
+
+        $requiredAnggota = self::DOCS_ANGGOTA;
+
+        $requiredPasangan = self::DOCS_PASANGAN;
+        if ($application->partner && $application->partner->status_pekerjaan === 'ASN') {
+            $requiredPasangan[] = self::DOCS_PASANGAN_ASN;
+        }
+
+        return view('user.marriage_applications.show', compact(
+            'application',
+            'requiredAnggota',
+            'requiredPasangan'
+        ));
+    }
+
+    // ─── uploadDocument ──────────────────────────────────
+    public function uploadDocument(Request $request, $id)
+    {
+        $application = Auth::user()->marriageApplications()->findOrFail($id);
+
+        if (!in_array($application->status, ['DRAFT', 'DIAJUKAN', 'PERLU_PERBAIKAN'])) {
+            return redirect()->back()->with('error', 'Dokumen tidak dapat diunggah pada status ' . $application->status . '.');
+        }
+
+        $request->validate([
+            'pihak'        => 'required|in:Anggota,Pasangan',
+            'jenis_dokumen'=> 'required|string|max:255',
+            'file'         => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        $file     = $request->file('file');
+        $fileName = time() . '_' . preg_replace('/[^A-Za-z0-9_.\-]/', '_', $file->getClientOriginalName());
+        $filePath = $file->storeAs('marriage_documents/' . $application->id, $fileName, 'private');
+
+        $document = $application->documents()->where('jenis_dokumen', $request->jenis_dokumen)->first();
+
+        if ($document) {
+            // Keep old file (do not delete) — store revision as updated record
+            $document->update([
+                'file_path'          => $filePath,
+                'file_name'          => $fileName,
+                'mime_type'          => $file->getClientMimeType(),
+                'file_size'          => $file->getSize(),
+                'status_verifikasi'  => 'BELUM_DIPERIKSA',
+                'catatan_verifikasi' => null,
+                'uploaded_at'        => now(),
+                'verified_at'        => null,
+                'verified_by'        => null,
+            ]);
+        } else {
+            $application->documents()->create([
+                'pihak'        => $request->pihak,
+                'jenis_dokumen'=> $request->jenis_dokumen,
+                'nama_dokumen' => $request->jenis_dokumen,
+                'file_path'    => $filePath,
+                'file_name'    => $fileName,
+                'mime_type'    => $file->getClientMimeType(),
+                'file_size'    => $file->getSize(),
+                'status_verifikasi' => 'BELUM_DIPERIKSA',
+                'uploaded_at'  => now(),
+            ]);
+        }
+
+        // If PERLU_PERBAIKAN, transition back to DIAJUKAN on upload
+        if ($application->status === 'PERLU_PERBAIKAN') {
+            $application->update(['status' => 'DIAJUKAN']);
+            MarriageStatusHistory::create([
+                'marriage_application_id' => $application->id,
+                'status'     => 'DIAJUKAN',
+                'catatan'    => 'Anggota mengunggah ulang dokumen "' . $request->jenis_dokumen . '". Dikembalikan ke status DIAJUKAN.',
+                'changed_by' => Auth::id(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Dokumen "' . $request->jenis_dokumen . '" berhasil diunggah.');
+    }
+
+    // ─── downloadDocument ────────────────────────────────
+    public function downloadDocument($id, $docId)
+    {
+        // Security: ensure the application belongs to the current user
+        $application = Auth::user()->marriageApplications()->findOrFail($id);
+        $document    = $application->documents()->findOrFail($docId);
+
+        if (!Storage::disk('private')->exists($document->file_path)) {
+            abort(404, 'File tidak ditemukan.');
+        }
+
+        return Storage::disk('private')->download($document->file_path, $document->file_name);
+    }
+}
