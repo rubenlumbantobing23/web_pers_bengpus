@@ -229,9 +229,9 @@
                 <i class="fa-solid fa-user"></i> DOKUMEN ANGGOTA ({{ count($requiredAnggota) }})
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-                @foreach($requiredAnggota as $req)
-                    @php $doc = $application->documents->where('jenis_dokumen', $req)->first(); @endphp
-                    @include('user.marriage_applications._document_item', ['req' => $req, 'doc' => $doc, 'pihak' => 'Anggota'])
+                @foreach($requiredAnggota as $reqType)
+                    @php $doc = $application->documents->where('marriage_document_type_id', $reqType->id)->first(); @endphp
+                    @include('user.marriage_applications._document_item', ['req' => $reqType, 'doc' => $doc, 'pihak' => 'Anggota'])
                 @endforeach
             </div>
 
@@ -239,9 +239,9 @@
                 <i class="fa-solid fa-user-dress"></i> DOKUMEN {{ strtoupper($application->partner->peran ?? 'PASANGAN') }} ({{ count($requiredPasangan) }})
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                @foreach($requiredPasangan as $req)
-                    @php $doc = $application->documents->where('jenis_dokumen', $req)->first(); @endphp
-                    @include('user.marriage_applications._document_item', ['req' => $req, 'doc' => $doc, 'pihak' => 'Pasangan'])
+                @foreach($requiredPasangan as $reqType)
+                    @php $doc = $application->documents->where('marriage_document_type_id', $reqType->id)->first(); @endphp
+                    @include('user.marriage_applications._document_item', ['req' => $reqType, 'doc' => $doc, 'pihak' => 'Pasangan'])
                 @endforeach
             </div>
         </div>

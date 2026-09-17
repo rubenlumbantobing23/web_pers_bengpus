@@ -15,33 +15,7 @@ use App\Services\MarriageLetterGenerator;
 
 class MarriageApplicationController extends Controller
 {
-    // ─── Required documents definition ─────────────────
-    const DOCS_ANGGOTA = [
-        'Surat Permohonan Izin Nikah',
-        'Surat NA/Pengantar Nikah',
-        'Hasil Rikes Kesdam III/Siliwangi',
-        'Hasil Rikes/Pemeriksaan Bintaldam III/Siliwangi',
-        'Sertifikat Lolos Litpers dari Kabangpam Puskomlekad',
-        'SKCK Orang Tua',
-    ];
-
-    const DOCS_PASANGAN = [
-        'Surat Persetujuan Orang Tua/Wali diketahui Lurah/Desa',
-        'Surat Kesanggupan Calon Suami/Istri diketahui Lurah/Desa',
-        'Surat Keterangan Orang Tua/Wali',
-        'Surat Keterangan usia calon suami/istri',
-        'NA/Pengantar Nikah dari Desa',
-        'Litpers calon pasangan dan orang tuanya dari Koramil',
-        'SKCK dari Kepolisian',
-        'Fotokopi KK',
-        'Fotokopi Akta Kelahiran',
-        'Fotokopi KTP',
-        'Fotokopi Ijazah terakhir',
-        'Pas foto berwarna background biru ukuran 9x6 cm',
-        'Pas foto berwarna background biru ukuran 4x6 cm',
-    ];
-
-    const DOCS_PASANGAN_ASN = 'Surat Keterangan Dinas dari instansi';
+    // Documents are fetched dynamically from MarriageDocumentType.
 
     // ─── Normalize jenis_kelamin and resolve roles ──────
     private function resolvePeran(?string $jenisKelamin): array
@@ -329,18 +303,25 @@ class MarriageApplicationController extends Controller
             ->with(['partner', 'documents', 'statusHistories.changer', 'letters'])
             ->findOrFail($id);
 
-        $requiredAnggota = self::DOCS_ANGGOTA;
+        // ─── Document Requirements ─────────────────────────────
+        $docTypes = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
 
-        $requiredPasangan = self::DOCS_PASANGAN;
-        if ($application->partner && $application->partner->status_pekerjaan === 'ASN') {
-            $requiredPasangan[] = self::DOCS_PASANGAN_ASN;
-        }
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA');
+        
+        $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
+            if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
+                return false;
+            }
+            if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+            }
+            return true;
+        });
 
-        return view('user.marriage_applications.show', compact(
-            'application',
-            'requiredAnggota',
-            'requiredPasangan'
-        ));
+        return view('user.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan'));
     }
 
     // ─── uploadDocument ──────────────────────────────────
@@ -354,24 +335,34 @@ class MarriageApplicationController extends Controller
 
         $request->validate([
             'pihak'        => 'required|in:Anggota,Pasangan',
+            'marriage_document_type_id' => 'required|exists:marriage_document_types,id',
             'jenis_dokumen'=> 'required|string|max:255',
             'file'         => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
-        $file     = $request->file('file');
-        $fileName = time() . '_' . preg_replace('/[^A-Za-z0-9_.\-]/', '_', $file->getClientOriginalName());
+        $docType = MarriageDocumentType::findOrFail($request->marriage_document_type_id);
+        $document = $application->documents()->where('marriage_document_type_id', $docType->id)->first();
+
+        // Delete old file if exists physically (do this before storing the new one in case name overlaps)
+        if ($document && Storage::disk('private')->exists($document->file_path)) {
+            Storage::disk('private')->delete($document->file_path);
+        }
+
+        $file    = $request->file('file');
+        
+        // [Application_ID]_[Timestamp]_[Safe_Document_Code].[Extension]
+        $safeCode = preg_replace('/[^A-Za-z0-9_.\-]/', '_', $docType->code);
+        $fileName = $application->id . '_' . now()->timestamp . '_' . $safeCode . '.' . $file->getClientOriginalExtension();
         $filePath = $file->storeAs('marriage_documents/' . $application->id, $fileName, 'private');
 
-        $document = $application->documents()->where('jenis_dokumen', $request->jenis_dokumen)->first();
-
         if ($document) {
-            // Keep old file (do not delete) — store revision as updated record
+            // Keep old record — store revision as updated record
             $document->update([
                 'file_path'          => $filePath,
                 'file_name'          => $fileName,
                 'mime_type'          => $file->getClientMimeType(),
                 'file_size'          => $file->getSize(),
-                'status_verifikasi'  => 'BELUM_DIPERIKSA',
+                'status_verifikasi'  => 'BELUM_DIPERIKSA', // Ensure it resets to pending verification if updated
                 'catatan_verifikasi' => null,
                 'uploaded_at'        => now(),
                 'verified_at'        => null,
@@ -379,9 +370,10 @@ class MarriageApplicationController extends Controller
             ]);
         } else {
             $application->documents()->create([
+                'marriage_document_type_id' => $docType->id,
                 'pihak'        => $request->pihak,
-                'jenis_dokumen'=> $request->jenis_dokumen,
-                'nama_dokumen' => $request->jenis_dokumen,
+                'jenis_dokumen'=> $request->jenis_dokumen, // legacy string code
+                'nama_dokumen' => $docType->name,
                 'file_path'    => $filePath,
                 'file_name'    => $fileName,
                 'mime_type'    => $file->getClientMimeType(),

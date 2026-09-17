@@ -5,8 +5,8 @@
     <!-- User Sidebar Navigation -->
     <aside style="width: 280px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;">
         <a href="{{ route('user.dashboard') }}" style="padding: 24px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; text-decoration: none; cursor: pointer;">
-            <div class="emblem-icon" style="width: 40px; height: 40px; font-size: 1.1rem; flex-shrink: 0;">
-                <i class="fa-solid fa-shield-halved"></i>
+            <div class="emblem-icon" style="width: 45px; height: 45px; flex-shrink: 0; background: transparent; display: flex; align-items: center; justify-content: center; padding: 0;">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo Bengpus" style="max-width: 100%; max-height: 100%; object-fit: contain;">
             </div>
             <div>
                 <h3 style="font-size: 1.1rem; color: #fff; line-height: 1.2;">BENGPUSKOMLEKAD</h3>
@@ -25,7 +25,7 @@
                 <span>Pengajuan Cuti</span>
             </a>
 
-            <a href="{{ route('user.marriage.index') }}" class="nav-item {{ request()->routeIs('user.marriage.*') ? 'active' : '' }}">
+            <a href="{{ route('user.pengajuan_nikah.index') }}" class="nav-item {{ request()->routeIs('user.pengajuan_nikah.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-heart"></i>
                 <span>Pengajuan Nikah</span>
             </a>

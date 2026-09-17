@@ -171,31 +171,128 @@ class AdminTemplateController extends Controller
             ],
             'surat_cuti_pns' => [
                 'name' => 'Surat Cuti Resmi (PNS)',
-                'description' => 'Template Surat Cuti resmi untuk PNS.',
+                'description' => 'Template Surat Cuti Dinas yang diterbitkan admin.',
                 'filename' => 'template_surat_cuti_pns.docx',
                 'placeholders' => [
                     '${nama}' => 'Nama lengkap',
                     '${pangkat}' => 'Pangkat / Golongan',
                     '${nrp}' => 'NRP / NIP',
                     '${jabatan}' => 'Jabatan',
+                    '${corps}' => 'Corps pemohon',
                     '${corps_pemohon}' => 'Corps pemohon',
+                    '${tujuan}' => 'Alamat tujuan',
+                    '${kendaraan}' => 'Kendaraan',
+                    '${pengikut}' => 'Pengikut',
                     '${jenis_cuti}' => 'Jenis cuti',
                     '${tgl_mulai}' => 'Tanggal mulai',
                     '${tgl_selesai}' => 'Tanggal selesai',
                     '${total_hari}' => 'Total hari',
-                    '${tujuan}' => 'Alamat tujuan',
-                    '${kendaraan}' => 'Kendaraan',
-                    '${pengikut}' => 'Pengikut',
-                    '${kodim}' => 'Kodim / Koramil tujuan',
-                    '${nama_waka}' => 'Nama Waka',
-                    '${pangkat_waka}' => 'Pangkat Waka',
-                    '${corps_waka}' => 'Corps Waka (dari nominatif penandatangan)',
-                    '${nrp_waka}' => 'NRP Waka',
-                    '${corps}' => 'Corps penandatangan',
-                    '${nama_penandatangan}' => 'Nama Penandatangan',
+                    '${kodim}' => 'Kodim / Koramil tempat melapor',
+                    '${tgl_terbit}' => 'Tanggal surat diterbitkan',
+                    '${nama_penandatangan}' => 'Nama Penandatangan (Kabeng)',
                     '${pangkat_penandatangan}' => 'Pangkat Penandatangan',
                     '${corps_penandatangan}' => 'Corps Penandatangan',
                     '${nrp_penandatangan}' => 'NRP Penandatangan',
+                ]
+            ],
+            // ─── MODULE PENGAJUAN NIKAH ─────────────────────────────────────
+            'surat_izin_nikah' => [
+                'name' => 'Surat Izin Nikah',
+                'description' => 'Surat Izin Nikah yang diterbitkan Pers setelah semua dokumen diverifikasi.',
+                'filename' => 'template_surat_izin_nikah.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP/NIP',
+                    '${jabatan}' => 'Jabatan', '${corps}' => 'Corps', '${satuan}' => 'Satuan',
+                    '${anggota_peran}' => 'Peran anggota (Calon Suami/Istri)',
+                    '${pasangan_peran}' => 'Peran pasangan', '${pasangan_sebutan}' => 'Sebutan pasangan (huruf kecil)',
+                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_ttl}' => 'TTL pasangan',
+                    '${pasangan_agama}' => 'Agama pasangan', '${pasangan_pekerjaan}' => 'Pekerjaan pasangan',
+                    '${pasangan_alamat}' => 'Alamat pasangan',
+                    '${nikah_tanggal}' => 'Tanggal nikah', '${nikah_hari}' => 'Hari nikah',
+                    '${nikah_tempat}' => 'Tempat nikah', '${nikah_alamat}' => 'Alamat nikah',
+                    '${tgl_pengajuan}' => 'Tgl pengajuan', '${tgl_terbit}' => 'Tgl surat terbit',
+                    '${nama_penandatangan}' => 'Nama Kabeng', '${pangkat_penandatangan}' => 'Pangkat Kabeng',
+                    '${nrp_penandatangan}' => 'NRP Kabeng',
+                ]
+            ],
+            'surat_pengantar_na' => [
+                'name' => 'Surat Pengantar NA',
+                'description' => 'Surat Pengantar Nikah (NA) dari satuan.',
+                'filename' => 'template_surat_pengantar_na.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
+                    '${pasangan_nama}' => 'Nama pasangan', '${nikah_tanggal}' => 'Tanggal rencana nikah',
+                    '${tgl_pengajuan}' => 'Tgl surat', '${nama_penandatangan}' => 'Nama Kabeng',
+                ]
+            ],
+            'surat_pengantar_kesdam' => [
+                'name' => 'Surat Pengantar Rikes Kesdam',
+                'description' => 'Surat pengantar pemeriksaan kesehatan Kesdam III/Siliwangi.',
+                'filename' => 'template_surat_pengantar_kesdam.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
+                    '${jabatan}' => 'Jabatan', '${satuan}' => 'Satuan',
+                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
+                    '${nama_penandatangan}' => 'Nama Kabeng',
+                ]
+            ],
+            'surat_pengantar_bintaldam' => [
+                'name' => 'Surat Pengantar Rikes Bintaldam',
+                'description' => 'Surat pengantar pemeriksaan mental Bintaldam III/Siliwangi.',
+                'filename' => 'template_surat_pengantar_bintaldam.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
+                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
+                    '${nama_penandatangan}' => 'Nama Kabeng',
+                ]
+            ],
+            'surat_pengantar_litpers' => [
+                'name' => 'Surat Pengantar Litpers',
+                'description' => 'Surat pengantar penelitian personel calon pasangan ke Kabangpam.',
+                'filename' => 'template_surat_pengantar_litpers.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
+                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
+                    '${nama_penandatangan}' => 'Nama Kabeng',
+                ]
+            ],
+            'surat_skbd' => [
+                'name' => 'Surat Permohonan SKBD',
+                'description' => 'Surat Permohonan Surat Keterangan Bebas Dinas (SKBD).',
+                'filename' => 'template_surat_skbd.docx',
+                'placeholders' => [
+                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
+                    '${jabatan}' => 'Jabatan', '${satuan}' => 'Satuan', '${tgl_pengajuan}' => 'Tgl surat',
+                    '${nama_penandatangan}' => 'Nama Kabeng',
+                ]
+            ],
+            'surat_persetujuan_ortua' => [
+                'name' => 'Surat Persetujuan Orang Tua/Wali',
+                'description' => 'Template surat persetujuan orang tua/wali pasangan.',
+                'filename' => 'template_surat_persetujuan_ortua.docx',
+                'placeholders' => [
+                    '${pasangan_bapak_nama}' => 'Nama bapak pasangan',
+                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_peran}' => 'Peran pasangan',
+                    '${nikah_tanggal}' => 'Tanggal nikah', '${tgl_pengajuan}' => 'Tgl surat',
+                ]
+            ],
+            'surat_kesanggupan_pasangan' => [
+                'name' => 'Surat Kesanggupan Calon Pasangan',
+                'description' => 'Surat kesanggupan dari calon pasangan.',
+                'filename' => 'template_surat_kesanggupan_pasangan.docx',
+                'placeholders' => [
+                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_ttl}' => 'TTL pasangan',
+                    '${pasangan_peran}' => 'Peran pasangan', '${nama}' => 'Nama anggota',
+                    '${nikah_tanggal}' => 'Tanggal nikah', '${tgl_pengajuan}' => 'Tgl surat',
+                ]
+            ],
+            'surat_ket_usia' => [
+                'name' => 'Surat Keterangan Usia Calon Pasangan',
+                'description' => 'Surat keterangan usia calon pasangan. TODO: validasi batas usia sesuai ketentuan Pers.',
+                'filename' => 'template_surat_ket_usia.docx',
+                'placeholders' => [
+                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_tanggal_lahir}' => 'Tgl lahir pasangan',
+                    '${pasangan_ttl}' => 'TTL pasangan', '${tgl_pengajuan}' => 'Tgl surat',
                 ]
             ],
         ];
@@ -218,7 +315,17 @@ class AdminTemplateController extends Controller
             'permohonan_pns', 
             'surat_cuti_perwira', 
             'surat_cuti_bintara_tamtama',
-            'surat_cuti_pns'
+            'surat_cuti_pns',
+            // Nikah templates
+            'surat_izin_nikah',
+            'surat_pengantar_na',
+            'surat_pengantar_kesdam',
+            'surat_pengantar_bintaldam',
+            'surat_pengantar_litpers',
+            'surat_skbd',
+            'surat_persetujuan_ortua',
+            'surat_kesanggupan_pasangan',
+            'surat_ket_usia',
         ];
 
         $request->validate([
@@ -254,7 +361,17 @@ class AdminTemplateController extends Controller
             'permohonan_pns', 
             'surat_cuti_perwira', 
             'surat_cuti_bintara_tamtama',
-            'surat_cuti_pns'
+            'surat_cuti_pns',
+            // Nikah templates
+            'surat_izin_nikah',
+            'surat_pengantar_na',
+            'surat_pengantar_kesdam',
+            'surat_pengantar_bintaldam',
+            'surat_pengantar_litpers',
+            'surat_skbd',
+            'surat_persetujuan_ortua',
+            'surat_kesanggupan_pasangan',
+            'surat_ket_usia',
         ];
 
         if (!in_array($type, $validTypes)) {

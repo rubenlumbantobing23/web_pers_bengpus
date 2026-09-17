@@ -66,8 +66,18 @@ class User extends Authenticatable
         return $this->hasMany(LeaveRequest::class);
     }
 
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
+
     public function marriageRequests()
     {
         return $this->hasMany(MarriageRequest::class);
+    }
+
+    public function marriageApplications()
+    {
+        return $this->hasMany(MarriageApplication::class);
     }
 }

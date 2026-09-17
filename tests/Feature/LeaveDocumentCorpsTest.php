@@ -99,10 +99,14 @@ class LeaveDocumentCorpsTest extends TestCase
     public function test_signer_corps_is_resolved_from_nominatif_even_when_applicant_is_pns()
     {
         $wakaPersonel = Personel::where('nrp_nip', '11960053320273')->first();
-        \App\Models\SignerOfficial::updateOrCreate(
-            ['role' => 'wakabeng'],
-            ['personel_id' => $wakaPersonel->id, 'is_active' => true]
-        );
+        
+        $wakilUnit = \App\Models\OrganizationUnit::where('name', 'WAKIL KEPALA')->first();
+        if ($wakilUnit) {
+            \App\Models\OrganizationOfficialAssignment::updateOrCreate(
+                ['organization_unit_id' => $wakilUnit->id, 'is_active' => true],
+                ['personel_id' => $wakaPersonel->id, 'role' => 'wakabeng', 'valid_from' => now()]
+            );
+        }
 
         $pns = Personel::where('nrp_nip', '197109161994011001')->first();
         $this->assertNotNull($pns);

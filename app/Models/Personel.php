@@ -64,6 +64,11 @@ class Personel extends Model
         return $this->belongsTo(OrganizationUnit::class, 'organization_unit_id');
     }
 
+    public function marriageApplications()
+    {
+        return $this->hasMany(MarriageApplication::class);
+    }
+
     // ─── Scopes ─────────────────────────────────────────
     public function scopeMiliter(Builder $query): Builder
     {

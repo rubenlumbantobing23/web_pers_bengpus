@@ -42,29 +42,6 @@ class OrganizationStructureSeeder extends Seeder
         OrganizationOfficialAssignment::where('organization_unit_id', $unsurPimpinan->id)
             ->update(['organization_unit_id' => $kepala->id]);
 
-        // Sync initial assignments for KEPALA and WAKIL KEPALA from existing signers if available
-        $kabengSigner = SignerOfficial::where('role', 'kabeng')->first();
-        if ($kabengSigner && !OrganizationOfficialAssignment::where('organization_unit_id', $kepala->id)->where('is_active', true)->exists()) {
-            OrganizationOfficialAssignment::create([
-                'organization_unit_id' => $kepala->id,
-                'personel_id' => $kabengSigner->personel_id,
-                'role' => 'kabeng',
-                'is_active' => true,
-                'valid_from' => now(),
-            ]);
-        }
-
-        $wakaSigner = SignerOfficial::where('role', 'wakabeng')->first();
-        if ($wakaSigner && !OrganizationOfficialAssignment::where('organization_unit_id', $wakilKepala->id)->where('is_active', true)->exists()) {
-            OrganizationOfficialAssignment::create([
-                'organization_unit_id' => $wakilKepala->id,
-                'personel_id' => $wakaSigner->personel_id,
-                'role' => 'wakabeng',
-                'is_active' => true,
-                'valid_from' => now(),
-            ]);
-        }
-
         // 2. UNSUR PEMBANTU PIMPINAN
         $pembantuPimpinan = OrganizationUnit::updateOrCreate(['name' => 'UNSUR PEMBANTU PIMPINAN'], [
             'parent_id' => null,

@@ -24,27 +24,29 @@ class MarriageDocumentTypeSeeder extends Seeder
 
 
             // B. TEMPLATE CALON/PASANGAN
-            ['code' => 'PERSETUJUAN_ORANG_TUA_WALI', 'name' => 'Surat Pernyataan Persetujuan Orang Tua/Wali', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'ORANG_TUA'],
-            ['code' => 'KESANGGUPAN_CALON_PASANGAN', 'name' => 'Surat Pernyataan Kesanggupan Calon Pasangan', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'KETERANGAN_USIA_CALON_PASANGAN', 'name' => 'Surat Keterangan Calon Pasangan Telah Mencapai Usia yang Dipersyaratkan', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'PERSETUJUAN_ORANG_TUA_WALI', 'name' => 'Surat Pernyataan Persetujuan Orang Tua/Wali diketahui Lurah/Desa', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'ORANG_TUA'],
+            ['code' => 'KESANGGUPAN_CALON_PASANGAN', 'name' => 'Surat Pernyataan Kesanggupan Calon Suami/Istri diketahui Lurah/Desa', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'KETERANGAN_ORANG_TUA_WALI', 'name' => 'Surat Keterangan Orang Tua/Wali', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'ORANG_TUA'],
+            ['code' => 'KETERANGAN_USIA_CALON_PASANGAN', 'name' => 'Surat Keterangan Calon Suami/Istri Telah Berusia 17+', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
 
             // C. HASIL INSTANSI LUAR
-            ['code' => 'NA_DARI_DESA', 'name' => 'NA/Pengantar Nikah dari Desa/Kelurahan', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
+            ['code' => 'NA_ANGGOTA', 'name' => 'NA/Pengantar Nikah Anggota dari KUA/Desa', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
+            ['code' => 'NA_DARI_DESA', 'name' => 'NA/Pengantar Nikah Calon Pasangan dari Desa/Kelurahan', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'HASIL_RIKES_KESDAM', 'name' => 'Hasil Pemeriksaan Kesehatan Kesdam III/Siliwangi', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'HASIL_PEMERIKSAAN_BINTALDAM', 'name' => 'Hasil Pemeriksaan/Petunjuk/Pendapat Bintaldam III/Siliwangi', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'HASIL_LITPERS', 'name' => 'Sertifikat/Hasil Lolos Litpers', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'SKBD_KORAMIL', 'name' => 'SKBD/Hasil Penelitian dari Koramil', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'SKBD_KODIM', 'name' => 'SKBD/Hasil Penelitian dari Kodim', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
-            ['code' => 'SKCK_ORANG_TUA', 'name' => 'SKCK Orang Tua', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
+            ['code' => 'SKCK_ORANG_TUA', 'name' => 'SKCK Orang Tua Anggota', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ORANG_TUA_ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
 
             // D. DOKUMEN PASANGAN
-            ['code' => 'KK_CALON_PASANGAN', 'name' => 'KK Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'AKTA_KELAHIRAN_CALON_PASANGAN', 'name' => 'Akta Kelahiran Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'KTP_CALON_PASANGAN', 'name' => 'KTP Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'IJAZAH_TERAKHIR_CALON_PASANGAN', 'name' => 'Ijazah Terakhir Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'PAS_FOTO_CALON_PASANGAN', 'name' => 'Pas Foto Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'PAS_FOTO_ORANG_TUA_CALON_PASANGAN', 'name' => 'Pas Foto Orang Tua Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'ORANG_TUA'],
-            ['code' => 'LITPERS_CALON_PASANGAN', 'name' => 'Litpers Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
+            ['code' => 'KK_CALON_PASANGAN', 'name' => 'Fotokopi KK Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'AKTA_KELAHIRAN_CALON_PASANGAN', 'name' => 'Fotokopi Akta Kelahiran Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'KTP_CALON_PASANGAN', 'name' => 'Fotokopi KTP Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'IJAZAH_TERAKHIR_CALON_PASANGAN', 'name' => 'Fotokopi Ijazah Terakhir Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'PAS_FOTO_BERDAMPINGAN', 'name' => 'Pas Foto Biru 9x6 pakaian Persit tanpa lencana, berdampingan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'PAS_FOTO_4X6_CALON_ISTRI_ORANG_TUA', 'name' => 'Pas Foto 4x6 Calon Istri + Kedua Orang Tua', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'LITPERS_CALON_PASANGAN', 'name' => 'Litpers Calon Suami/Istri', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'LITPERS_ORANG_TUA_CALON_PASANGAN', 'name' => 'Litpers Orang Tua Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'SKCK_CALON_PASANGAN', 'name' => 'SKCK Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
             ['code' => 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN', 'name' => 'Surat Keterangan Dinas Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],
