@@ -209,31 +209,42 @@ $partner = $application->partner;
                 <i class="fa-solid fa-folder-open"></i> Dokumen Persyaratan
             </h3>
 
-            @php
-                $docsAnggota  = $application->documents->where('pihak', 'Anggota');
-                $docsPassangan = $application->documents->where('pihak', 'Pasangan');
-            @endphp
-
             <div style="font-size: 0.75rem; font-weight: 700; color: #60a5fa; text-transform: uppercase; margin-bottom: 10px;">
-                <i class="fa-solid fa-user"></i> Dokumen Anggota ({{ $docsAnggota->count() }})
+                <i class="fa-solid fa-user"></i> Dokumen Anggota ({{ $requiredAnggota->count() }})
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
-                @forelse($docsAnggota as $doc)
-                @include('admin.marriage_applications._admin_document_item', ['doc' => $doc, 'application' => $application])
-                @empty
-                <div style="font-size: 0.8rem; color: var(--text-muted); padding: 8px;">Belum ada dokumen dari pihak Anggota.</div>
-                @endforelse
+                @foreach($requiredAnggota as $dt)
+                    @php $doc = $application->documents->where('marriage_document_type_id', $dt->id)->first(); @endphp
+                    @if($doc)
+                        @include('admin.marriage_applications._admin_document_item', ['doc' => $doc, 'application' => $application])
+                    @else
+                        <div style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; padding: 10px 12px; opacity: 0.7;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">{{ $dt->name }}</div>
+                                <span class="badge badge-secondary" style="font-size: 0.68rem; background: rgba(255,255,255,0.1); color: #94a3b8;">BELUM ADA</span>
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
             </div>
 
             <div style="font-size: 0.75rem; font-weight: 700; color: #f472b6; text-transform: uppercase; margin-bottom: 10px;">
-                <i class="fa-solid fa-user-dress"></i> Dokumen {{ $partner ? $partner->peran : 'Pasangan' }} ({{ $docsPassangan->count() }})
+                <i class="fa-solid fa-user-dress"></i> Dokumen {{ $partner ? $partner->peran : 'Pasangan' }} ({{ $requiredPasangan->count() }})
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
-                @forelse($docsPassangan as $doc)
-                @include('admin.marriage_applications._admin_document_item', ['doc' => $doc, 'application' => $application])
-                @empty
-                <div style="font-size: 0.8rem; color: var(--text-muted); padding: 8px;">Belum ada dokumen dari pihak Pasangan.</div>
-                @endforelse
+                @foreach($requiredPasangan as $dt)
+                    @php $doc = $application->documents->where('marriage_document_type_id', $dt->id)->first(); @endphp
+                    @if($doc)
+                        @include('admin.marriage_applications._admin_document_item', ['doc' => $doc, 'application' => $application])
+                    @else
+                        <div style="background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; padding: 10px 12px; opacity: 0.7;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">{{ $dt->name }}</div>
+                                <span class="badge badge-secondary" style="font-size: 0.68rem; background: rgba(255,255,255,0.1); color: #94a3b8;">BELUM ADA</span>
+                            </div>
+                        </div>
+                    @endif
+                @endforeach
             </div>
         </div>
 

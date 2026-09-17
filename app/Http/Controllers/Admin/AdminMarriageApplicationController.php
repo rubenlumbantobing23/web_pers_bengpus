@@ -35,7 +35,25 @@ class AdminMarriageApplicationController extends Controller
             'letters.generator',
         ])->findOrFail($id);
 
-        return view('admin.marriage_applications.show', compact('application'));
+        // ─── Document Requirements ─────────────────────────────
+        $docTypes = \App\Models\MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA');
+        
+        $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
+            if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
+                return false;
+            }
+            if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+            }
+            return true;
+        });
+
+        return view('admin.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan'));
     }
 
     // ─── verifyDocument ──────────────────────────────────
@@ -82,12 +100,27 @@ class AdminMarriageApplicationController extends Controller
 
         $application = MarriageApplication::findOrFail($id);
 
-        // Guard: cannot move to DISETUJUI if there are rejected/unverified docs
+        // Guard: cannot move to DIVERIFIKASI if not all required docs are present and DITERIMA
         if ($request->status === 'DIVERIFIKASI') {
-            $unverified = $application->documents()->where('status_verifikasi', 'BELUM_DIPERIKSA')->count();
-            $rejected   = $application->documents()->where('status_verifikasi', 'DITOLAK')->count();
-            if ($unverified > 0 || $rejected > 0) {
-                return redirect()->back()->with('error', 'Masih terdapat dokumen yang belum diperiksa atau ditolak. Pastikan semua dokumen diterima sebelum mengubah status ke DIVERIFIKASI.');
+            $docTypes = \App\Models\MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                ->where('is_active', true)
+                ->get();
+            
+            $requiredDocs = $docTypes->filter(function($dt) use ($application) {
+                if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                    return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+                }
+                return true;
+            });
+
+            foreach ($requiredDocs as $docType) {
+                $doc = $application->documents()->where('marriage_document_type_id', $docType->id)->first();
+                if (!$doc) {
+                    return redirect()->back()->with('error', 'Masih terdapat dokumen wajib yang BELUM ADA. Pastikan semua dokumen diunggah dan diterima sebelum mengubah status ke DIVERIFIKASI.');
+                }
+                if ($doc->status_verifikasi !== 'DITERIMA') {
+                    return redirect()->back()->with('error', 'Masih terdapat dokumen yang ' . $doc->status_verifikasi . '. Pastikan semua dokumen DITERIMA sebelum mengubah status ke DIVERIFIKASI.');
+                }
             }
         }
 

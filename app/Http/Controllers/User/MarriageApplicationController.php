@@ -356,12 +356,19 @@ class MarriageApplicationController extends Controller
         $filePath = $file->storeAs('marriage_documents/' . $application->id, $fileName, 'private');
 
         if ($document) {
+            // Check if document is already accepted
+            if ($document->status_verifikasi === 'DITERIMA') {
+                return redirect()->back()->with('error', 'Dokumen yang sudah DITERIMA tidak dapat diubah.');
+            }
+
             // Keep old record — store revision as updated record
             $document->update([
                 'file_path'          => $filePath,
                 'file_name'          => $fileName,
                 'mime_type'          => $file->getClientMimeType(),
                 'file_size'          => $file->getSize(),
+                'status_verifikasi'  => 'BELUM_DIPERIKSA',
+                'catatan_verifikasi' => null,
                 'uploaded_at'        => now(),
             ]);
         } else {
