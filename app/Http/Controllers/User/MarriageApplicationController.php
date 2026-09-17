@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\MarriageApplication;
 use App\Models\MarriagePartner;
 use App\Models\MarriageStatusHistory;
+use App\Models\MarriageDocumentType;
+use App\Models\MarriageLetter;
+use App\Services\MarriageLetterGenerator;
 
 class MarriageApplicationController extends Controller
 {
@@ -121,6 +124,12 @@ class MarriageApplicationController extends Controller
             'kecamatan_nikah'      => $request->kecamatan_nikah ?: '-',
             'kabupaten_nikah'      => $request->kabupaten_nikah ?: '-',
             'provinsi_nikah'       => $request->provinsi_nikah ?: '-',
+            'alamat_domisili'      => $request->alamat_domisili ?: '-',
+            'kelurahan_domisili'   => $request->kelurahan_domisili ?: '-',
+            'kecamatan_domisili'   => $request->kecamatan_domisili ?: '-',
+            'kabupaten_domisili'   => $request->kabupaten_domisili ?: '-',
+            'provinsi_domisili'    => $request->provinsi_domisili ?: '-',
+            'kua_tujuan'           => $request->kua_tujuan ?: '-',
             'status'               => 'DRAFT',
         ]);
 
@@ -208,6 +217,13 @@ class MarriageApplicationController extends Controller
             'pasangan_kecamatan'        => 'required|string|max:100',
             'pasangan_kabupaten'        => 'required|string|max:100',
             'pasangan_provinsi'         => 'required|string|max:100',
+            // Domisili
+            'alamat_domisili'           => 'required|string|max:500',
+            'kelurahan_domisili'        => 'required|string|max:100',
+            'kecamatan_domisili'        => 'required|string|max:100',
+            'kabupaten_domisili'        => 'required|string|max:100',
+            'provinsi_domisili'         => 'required|string|max:100',
+            'kua_tujuan'                => 'required|string|max:100',
             // Orang Tua
             'bapak_nama'      => 'required|string|max:255',
             'bapak_agama'     => 'required|string|max:100',
@@ -232,6 +248,12 @@ class MarriageApplicationController extends Controller
             'kecamatan_nikah'       => $validated['kecamatan_nikah'],
             'kabupaten_nikah'       => $validated['kabupaten_nikah'],
             'provinsi_nikah'        => $validated['provinsi_nikah'],
+            'alamat_domisili'       => $validated['alamat_domisili'],
+            'kelurahan_domisili'    => $validated['kelurahan_domisili'],
+            'kecamatan_domisili'    => $validated['kecamatan_domisili'],
+            'kabupaten_domisili'    => $validated['kabupaten_domisili'],
+            'provinsi_domisili'     => $validated['provinsi_domisili'],
+            'kua_tujuan'            => $validated['kua_tujuan'],
             'status'                => 'DIAJUKAN',
         ]);
 
@@ -395,5 +417,67 @@ class MarriageApplicationController extends Controller
         }
 
         return Storage::disk('private')->download($document->file_path, $document->file_name);
+    }
+
+    // ─── generateLetter ──────────────────────────────────
+    public function generateLetter(Request $request, $id, MarriageLetterGenerator $generator)
+    {
+        $application = Auth::user()->marriageApplications()->findOrFail($id);
+        
+        $request->validate([
+            'type_code' => 'required|string'
+        ]);
+        
+        $typeCode = $request->type_code;
+        
+        $documentType = MarriageDocumentType::where('code', $typeCode)->firstOrFail();
+        
+        if (!$documentType->template_path) {
+            return redirect()->back()->with('error', 'Template untuk surat ini belum tersedia.');
+        }
+
+        $templateAbsolutePath = storage_path('app/' . $documentType->template_path);
+        
+        if (!file_exists($templateAbsolutePath)) {
+            return redirect()->back()->with('error', 'File template fisik tidak ditemukan: ' . $documentType->template_path);
+        }
+
+        $outputName = strtolower($typeCode) . '_' . $application->id;
+        
+        try {
+            $filePath = $generator->generate($application, $templateAbsolutePath, $outputName);
+            
+            MarriageLetter::updateOrCreate(
+                [
+                    'marriage_application_id' => $application->id,
+                    'jenis_surat'             => $typeCode,
+                ],
+                [
+                    'file_generated' => $filePath,
+                    'status'         => 'TERSEDIA',
+                    'generated_at'   => now(),
+                    'generated_by'   => Auth::id(),
+                ]
+            );
+            
+            return redirect()->back()->with('success', 'Surat ' . $documentType->name . ' berhasil di-generate.');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal generate surat: ' . $e->getMessage());
+        }
+    }
+
+    // ─── downloadLetter ──────────────────────────────────
+    public function downloadLetter($id, $letterId)
+    {
+        $application = Auth::user()->marriageApplications()->findOrFail($id);
+        $letter      = $application->letters()->findOrFail($letterId);
+        
+        if (!Storage::disk('private')->exists($letter->file_generated)) {
+            abort(404, 'File surat tidak ditemukan.');
+        }
+        
+        $fileName = basename($letter->file_generated);
+        return Storage::disk('private')->download($letter->file_generated, $fileName);
     }
 }

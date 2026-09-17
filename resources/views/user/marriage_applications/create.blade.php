@@ -106,10 +106,44 @@
         </div>
     </div>
 
-    {{-- ═══ SECTION 3: DATA CALON PASANGAN ════════════════════════════════ --}}
+    {{-- ═══ SECTION 3: DATA DOMISILI ANGGOTA & KUA TUJUAN ════════════════════ --}}
     <div class="glass-card" style="margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #db2777, #9d174d); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">3</div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">3</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Domisili Anggota & KUA Tujuan</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Alamat Domisili Anggota <span class="text-danger">*</span></label>
+                <textarea name="alamat_domisili" class="form-control" rows="2" required>{{ old('alamat_domisili') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Kelurahan / Desa Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kelurahan_domisili" class="form-control" value="{{ old('kelurahan_domisili') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kecamatan Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kecamatan_domisili" class="form-control" value="{{ old('kecamatan_domisili') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kabupaten / Kota Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kabupaten_domisili" class="form-control" value="{{ old('kabupaten_domisili') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Provinsi Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="provinsi_domisili" class="form-control" value="{{ old('provinsi_domisili') }}" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Nama KUA Tujuan (Untuk Pengantar NA) <span class="text-danger">*</span></label>
+                <input type="text" name="kua_tujuan" class="form-control" value="{{ old('kua_tujuan') }}" placeholder="Contoh: KUA Kecamatan Cicendo" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 4: DATA CALON PASANGAN ════════════════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #db2777, #9d174d); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">4</div>
             <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data {{ $peranPasangan }}</h3>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
@@ -179,10 +213,10 @@
         </div>
     </div>
 
-    {{-- ═══ SECTION 4: DATA ORANG TUA / WALI PASANGAN ═════════════════════ --}}
+    {{-- ═══ SECTION 5: DATA ORANG TUA / WALI PASANGAN ═════════════════════ --}}
     <div class="glass-card" style="margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #d97706, #b45309); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">4</div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #d97706, #b45309); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">5</div>
             <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Orang Tua / Wali {{ $peranPasangan }}</h3>
         </div>
 

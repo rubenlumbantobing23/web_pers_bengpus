@@ -14,13 +14,14 @@ class MarriageDocumentTypeSeeder extends Seeder
     {
         $documents = [
             // A. SURAT DARI SATUAN
-            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'PENGANTAR_NA', 'name' => 'Surat Pengantar Nikah (NA)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'PENGANTAR_LITPERS', 'name' => 'Surat Permohonan Penelitian Personel (Litpers)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih dari Penelitian Khusus', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
-            ['code' => 'SURAT_KETERANGAN_BELUM_NIKAH', 'name' => 'Surat Keterangan Belum Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM'],
+            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => null],
+            ['code' => 'PENGANTAR_NA', 'name' => 'Surat Pengantar Nikah (NA)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_na.docx'],
+            ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_kesdam.docx'],
+            ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_bintaldam.docx'],
+            ['code' => 'PENGANTAR_LITPERS', 'name' => 'Surat Permohonan Penelitian Personel (Litpers)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_litpers.docx'],
+            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih dari Penelitian Khusus', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_skbd.docx'],
+            ['code' => 'SURAT_KETERANGAN_BELUM_NIKAH', 'name' => 'Surat Keterangan Belum Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => null],
+
 
             // B. TEMPLATE CALON/PASANGAN
             ['code' => 'PERSETUJUAN_ORANG_TUA_WALI', 'name' => 'Surat Pernyataan Persetujuan Orang Tua/Wali', 'category' => 'TEMPLATE_CALON', 'owner_type' => 'ORANG_TUA_PASANGAN', 'source_type' => 'ORANG_TUA'],

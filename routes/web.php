@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\AdminHolidayController;
 use App\Http\Controllers\Admin\AdminLetterController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\User\MarriageApplicationController;
+use App\Http\Controllers\Admin\AdminMarriageApplicationController;
 
 // Landing Page / Login
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('home');
@@ -55,6 +57,18 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::post('/marriage', [UserMarriageController::class, 'store'])->name('marriage.store');
     Route::get('/marriage/{id}', [UserMarriageController::class, 'show'])->name('marriage.show');
 
+    // Pengajuan Nikah (New Module)
+    Route::get('/pengajuan-nikah', [MarriageApplicationController::class, 'index'])->name('pengajuan_nikah.index');
+    Route::get('/pengajuan-nikah/create', [MarriageApplicationController::class, 'create'])->name('pengajuan_nikah.create');
+    Route::post('/pengajuan-nikah', [MarriageApplicationController::class, 'store'])->name('pengajuan_nikah.store');
+    Route::post('/pengajuan-nikah/draft', [MarriageApplicationController::class, 'saveDraft'])->name('pengajuan_nikah.save_draft');
+    Route::get('/pengajuan-nikah/{id}', [MarriageApplicationController::class, 'show'])->name('pengajuan_nikah.show');
+    Route::post('/pengajuan-nikah/{id}/documents', [MarriageApplicationController::class, 'uploadDocument'])->name('pengajuan_nikah.upload_document');
+    Route::get('/pengajuan-nikah/{id}/documents/{docId}/download', [MarriageApplicationController::class, 'downloadDocument'])->name('pengajuan_nikah.download_document');
+    Route::post('/pengajuan-nikah/{id}/submit', [MarriageApplicationController::class, 'submit'])->name('pengajuan_nikah.submit');
+    Route::post('/pengajuan-nikah/{id}/generate', [MarriageApplicationController::class, 'generateLetter'])->name('pengajuan_nikah.generate_letter');
+    Route::get('/pengajuan-nikah/{id}/letters/{letterId}/download', [MarriageApplicationController::class, 'downloadLetter'])->name('pengajuan_nikah.download_letter');
+
     // Profil
     Route::get('/profile', [UserProfileController::class, 'show'])->name('profile');
     Route::post('/profile', [UserProfileController::class, 'update'])->name('profile.update');
@@ -71,10 +85,19 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/leave/{id}/status', [AdminLeaveController::class, 'updateStatus'])->name('leave.update_status');
     Route::post('/leave/{id}/issue-letter', [AdminLeaveController::class, 'issueSuratCuti'])->name('leave.issue_letter');
 
-    // Verification Nikah
+    // Verification Nikah (Old)
     Route::get('/marriage', [AdminMarriageController::class, 'index'])->name('marriage.index');
     Route::get('/marriage/{id}', [AdminMarriageController::class, 'show'])->name('marriage.show');
     Route::post('/marriage/{id}/status', [AdminMarriageController::class, 'updateStatus'])->name('marriage.update_status');
+
+    // Pengajuan Nikah (New Module)
+    Route::get('/pengajuan-nikah', [AdminMarriageApplicationController::class, 'index'])->name('admin.pengajuan_nikah.index');
+    Route::get('/pengajuan-nikah/{id}', [AdminMarriageApplicationController::class, 'show'])->name('admin.pengajuan_nikah.show');
+    Route::post('/pengajuan-nikah/{id}/verify', [AdminMarriageApplicationController::class, 'verifyDocument'])->name('admin.pengajuan_nikah.verify_document');
+    Route::post('/pengajuan-nikah/{id}/status', [AdminMarriageApplicationController::class, 'updateStatus'])->name('admin.pengajuan_nikah.update_status');
+    Route::post('/pengajuan-nikah/{id}/generate', [AdminMarriageApplicationController::class, 'generateLetter'])->name('admin.pengajuan_nikah.generate_letter');
+    Route::get('/pengajuan-nikah/{id}/documents/{docId}/download', [AdminMarriageApplicationController::class, 'downloadDocument'])->name('admin.pengajuan_nikah.download_document');
+    Route::get('/pengajuan-nikah/{id}/letters/{letterId}/download', [AdminMarriageApplicationController::class, 'downloadLetter'])->name('admin.pengajuan_nikah.download_letter');
 
     // Nominatif Personel
     Route::get('/personel',                   [AdminPersonelController::class, 'index'])->name('personel.index');
