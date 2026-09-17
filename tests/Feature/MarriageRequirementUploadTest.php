@@ -173,4 +173,149 @@ class MarriageRequirementUploadTest extends TestCase
         $response = $this->actingAs($user1)->get(route('user.pengajuan_nikah.download_document', [$application->id, $doc->id]));
         $response->assertStatus(200);
     }
+
+    private function createDummyApplication(User $user, $status = 'DRAFT')
+    {
+        $personel = Personel::create([
+            'user_id' => $user->id,
+            'nama' => 'Test Personel',
+            'nrp_nip' => '1234567890',
+            'pangkat_golongan' => 'Letda',
+            'jabatan' => 'Pama',
+            'satuan_bagian' => 'Bengpus',
+            'jenis_kelamin' => 'Pria'
+        ]);
+        
+        return MarriageApplication::create([
+            'user_id'              => $user->id,
+            'personel_id'          => $personel->id,
+            'jenis_kelamin_anggota'=> 'Pria',
+            'peran_anggota'        => 'suami',
+            'tanggal_pengajuan'    => now(),
+            'tanggal_rencana_nikah'=> now()->addMonth(),
+            'tempat_nikah'         => '-',
+            'alamat_nikah'         => '-',
+            'kelurahan_nikah'      => '-',
+            'kecamatan_nikah'      => '-',
+            'kabupaten_nikah'      => '-',
+            'provinsi_nikah'       => '-',
+            'alamat_domisili'      => '-',
+            'kelurahan_domisili'   => '-',
+            'kecamatan_domisili'   => '-',
+            'kabupaten_domisili'   => '-',
+            'provinsi_domisili'    => '-',
+            'kua_tujuan'           => '-',
+            'status'               => $status,
+        ]);
+    }
+
+    public function test_invalid_extension_is_rejected()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'DRAFT');
+        $docType = MarriageDocumentType::where('code', 'KK_CALON_PASANGAN')->first();
+        
+        $file = UploadedFile::fake()->create('document.exe', 100, 'application/x-msdownload');
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'Pasangan',
+            'marriage_document_type_id' => $docType->id,
+            'jenis_dokumen' => $docType->code,
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHasErrors('file');
+    }
+
+    public function test_file_too_large_is_rejected()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'DRAFT');
+        $docType = MarriageDocumentType::where('code', 'KK_CALON_PASANGAN')->first();
+        
+        $file = UploadedFile::fake()->create('document.pdf', 6000, 'application/pdf'); // > 5MB
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'Pasangan',
+            'marriage_document_type_id' => $docType->id,
+            'jenis_dokumen' => $docType->code,
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHasErrors('file');
+    }
+
+    public function test_invalid_document_type_is_rejected()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'DRAFT');
+        
+        $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'Pasangan',
+            'marriage_document_type_id' => 999999, // Invalid ID
+            'jenis_dokumen' => 'INVALID_CODE',
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHasErrors('marriage_document_type_id');
+    }
+
+    public function test_invalid_pihak_is_rejected()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'DRAFT');
+        $docType = MarriageDocumentType::where('code', 'KK_CALON_PASANGAN')->first();
+        
+        $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'OrangLain', // Invalid Pihak
+            'marriage_document_type_id' => $docType->id,
+            'jenis_dokumen' => $docType->code,
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHasErrors('pihak');
+    }
+
+    public function test_upload_on_invalid_application_status_is_rejected()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'DISETUJUI');
+        $docType = MarriageDocumentType::where('code', 'KK_CALON_PASANGAN')->first();
+        
+        $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'Pasangan',
+            'marriage_document_type_id' => $docType->id,
+            'jenis_dokumen' => $docType->code,
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('Dokumen tidak dapat diunggah', session('error'));
+    }
+
+    public function test_application_status_perlu_perbaikan_remains_perlu_perbaikan_after_upload()
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $application = $this->createDummyApplication($user, 'PERLU_PERBAIKAN');
+        $docType = MarriageDocumentType::where('code', 'KK_CALON_PASANGAN')->first();
+        
+        $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+        
+        $response = $this->actingAs($user)->post(route('user.pengajuan_nikah.upload_document', $application->id), [
+            'pihak' => 'Pasangan',
+            'marriage_document_type_id' => $docType->id,
+            'jenis_dokumen' => $docType->code,
+            'file' => $file
+        ]);
+        
+        $response->assertSessionHas('success');
+        $application->refresh();
+        $this->assertEquals('PERLU_PERBAIKAN', $application->status);
+    }
 }

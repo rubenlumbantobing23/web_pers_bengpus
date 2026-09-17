@@ -362,11 +362,7 @@ class MarriageApplicationController extends Controller
                 'file_name'          => $fileName,
                 'mime_type'          => $file->getClientMimeType(),
                 'file_size'          => $file->getSize(),
-                'status_verifikasi'  => 'BELUM_DIPERIKSA', // Ensure it resets to pending verification if updated
-                'catatan_verifikasi' => null,
                 'uploaded_at'        => now(),
-                'verified_at'        => null,
-                'verified_by'        => null,
             ]);
         } else {
             $application->documents()->create([
@@ -383,16 +379,7 @@ class MarriageApplicationController extends Controller
             ]);
         }
 
-        // If PERLU_PERBAIKAN, transition back to DIAJUKAN on upload
-        if ($application->status === 'PERLU_PERBAIKAN') {
-            $application->update(['status' => 'DIAJUKAN']);
-            MarriageStatusHistory::create([
-                'marriage_application_id' => $application->id,
-                'status'     => 'DIAJUKAN',
-                'catatan'    => 'Anggota mengunggah ulang dokumen "' . $request->jenis_dokumen . '". Dikembalikan ke status DIAJUKAN.',
-                'changed_by' => Auth::id(),
-            ]);
-        }
+
 
         return redirect()->back()->with('success', 'Dokumen "' . $request->jenis_dokumen . '" berhasil diunggah.');
     }
