@@ -71,6 +71,20 @@
     </div>
     @endif
 
+    {{-- Workflow Guidance --}}
+    @if(in_array($application->status, ['PENGAJUAN_DISETUJUI', 'PERLU_PERBAIKAN', 'DIVERIFIKASI', 'DISETUJUI', 'SELESAI']))
+    <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); padding: 14px 18px; border-radius: 10px; color: #bfdbfe;">
+        <div style="font-weight: 700; margin-bottom: 8px; color: #60a5fa;"><i class="fa-solid fa-route"></i> Panduan Alur Dokumen Persyaratan Nikah</div>
+        <ol style="margin: 0; padding-left: 20px; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px;">
+            <li><strong>Download Surat Pengantar</strong> dari Personalia pada bagian kiri halaman.</li>
+            <li><strong>Cetak dan bawa</strong> surat tersebut ke instansi terkait (Kesdam, Bintaldam, Koramil/Kodim, dll).</li>
+            <li><strong>Dapatkan hasil/sertifikat</strong> pemeriksaan dari instansi tersebut.</li>
+            <li><strong>Upload hasil/sertifikat</strong> tersebut pada bagian Dokumen Persyaratan di kanan halaman.</li>
+            <li><strong>Tunggu verifikasi</strong> dari Staff Personalia.</li>
+        </ol>
+    </div>
+    @endif
+
     <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; align-items: start;">
 
         {{-- LEFT COLUMN --}}

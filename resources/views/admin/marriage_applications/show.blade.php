@@ -177,43 +177,15 @@ $partner = $application->partner;
             </div>
             @endif
 
-            {{-- Generate Letter --}}
+            {{-- Arsip Surat Tercetak --}}
+            @if($application->letters->isNotEmpty())
             <div class="glass-card">
                 <h3 style="font-size: 0.95rem; color: var(--accent-gold); font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-                    <i class="fa-solid fa-file-word"></i> Generate Surat
+                    <i class="fa-solid fa-file-word"></i> Arsip Surat Tercetak
                 </h3>
-                <form action="{{ route('admin.admin.pengajuan_nikah.generate_letter', $application->id) }}" method="POST">
-                    @csrf
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label style="font-size: 0.8rem;">Pilih Jenis Surat</label>
-                        <select name="jenis_surat" class="form-control" required>
-                            <option value="">-- Pilih Surat --</option>
-                            @foreach([
-                                'Surat Izin Nikah',
-                                'Surat Pengantar NA',
-                                'Surat Pengantar Pemeriksaan Kesdam',
-                                'Surat Pengantar Bintaldam',
-                                'Surat Pengantar Litpers',
-                                'Surat Permohonan SKBD',
-                                'Surat Persetujuan Orang Tua/Wali',
-                                'Surat Kesanggupan Calon Pasangan',
-                                'Surat Keterangan Usia Calon Pasangan',
-                            ] as $surat)
-                            <option value="{{ $surat }}">{{ $surat }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-military" style="font-size: 0.85rem; padding: 8px 18px;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Surat
-                    </button>
-                </form>
-
-                {{-- Generated Letters List --}}
-                @if($application->letters->isNotEmpty())
-                <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06);">
-                    <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 10px;">Surat yang Telah Dibuat</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
                     @foreach($application->letters as $letter)
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; margin-bottom: 8px; border: 1px solid rgba(255,255,255,0.07);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);">
                         <div>
                             <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">{{ $letter->jenis_surat }}</div>
                             <div style="font-size: 0.75rem; color: var(--text-muted);">{{ $letter->generated_at?->format('d M Y H:i') }} — {{ $letter->generator->name ?? 'Admin' }}</div>
@@ -224,8 +196,8 @@ $partner = $application->partner;
                     </div>
                     @endforeach
                 </div>
-                @endif
             </div>
+            @endif
 
             {{-- Riwayat Status --}}
             <div class="glass-card">
