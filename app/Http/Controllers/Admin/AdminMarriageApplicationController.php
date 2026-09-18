@@ -35,13 +35,15 @@ class AdminMarriageApplicationController extends Controller
             'letters.generator',
         ])->findOrFail($id);
 
-        // ─── Document Requirements ─────────────────────────────
-        $docTypes = \App\Models\MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+        $docTypes = \App\Models\MarriageDocumentType::where(function ($q) {
+                $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                  ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            })
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
-        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA');
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA' || $dt->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
         
         $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
             if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
@@ -105,6 +107,14 @@ class AdminMarriageApplicationController extends Controller
         if ($newStatus === MarriageApplication::STATUS_PENGAJUAN_DISETUJUI) {
             if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
                 return redirect()->back()->with('error', 'Hanya pengajuan status DIAJUKAN yang dapat disetujui awal.');
+            }
+            
+            $docTypeSPN = \App\Models\MarriageDocumentType::where('code', 'SURAT_PERMOHONAN_IZIN_NIKAH')->first();
+            if ($docTypeSPN) {
+                $docSPN = $application->documents()->where('marriage_document_type_id', $docTypeSPN->id)->first();
+                if (!$docSPN || $docSPN->status_verifikasi !== 'DITERIMA') {
+                    return redirect()->back()->with('error', 'Surat Pengajuan Nikah (signed-return) belum diunggah atau belum diverifikasi/diterima.');
+                }
             }
         } elseif ($newStatus === MarriageApplication::STATUS_DITOLAK) {
             if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
@@ -170,6 +180,16 @@ class AdminMarriageApplicationController extends Controller
             if ($application->status !== MarriageApplication::STATUS_DISETUJUI) {
                 return redirect()->back()->with('error', 'Hanya pengajuan status DISETUJUI yang dapat diselesaikan.');
             }
+
+            // Enforce SURAT_IZIN_NIKAH_FINAL is generated and physically exists
+            $finalLetter = \App\Models\MarriageLetter::where('marriage_application_id', $application->id)
+                ->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')
+                ->where('status', 'TERSEDIA')
+                ->first();
+
+            if (!$finalLetter || !\Illuminate\Support\Facades\Storage::disk('private')->exists($finalLetter->file_generated)) {
+                return redirect()->back()->with('error', 'Surat Izin Nikah final belum tersedia. Generate Surat Izin Nikah terlebih dahulu.');
+            }
         } else {
             return redirect()->back()->with('error', 'Status tidak dikenali.');
         }
@@ -209,33 +229,33 @@ class AdminMarriageApplicationController extends Controller
             MarriageApplication::STATUS_SELESAI
         ];
 
-        if (!in_array($application->status, $allowedStatusesForLetter)) {
+        if ($request->jenis_surat === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+        }
+
+        if ($request->jenis_surat === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            return redirect()->back()->with('error', 'Surat Izin Nikah final hanya dapat digenerate setelah pengajuan disetujui akhir (DISETUJUI).');
+        }
+
+        if ($request->jenis_surat !== 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, $allowedStatusesForLetter)) {
             return redirect()->back()->with('error', 'Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui (PENGAJUAN_DISETUJUI).');
         }
 
-        // Map jenis_surat to template filename
-        $templateMap = [
-            'Surat Izin Nikah'                     => 'template_surat_izin_nikah.docx',
-            'Surat Pengantar NA'                    => 'template_surat_pengantar_na.docx',
-            'Surat Pengantar Pemeriksaan Kesdam'   => 'template_surat_pengantar_kesdam.docx',
-            'Surat Pengantar Bintaldam'             => 'template_surat_pengantar_bintaldam.docx',
-            'Surat Pengantar Litpers'               => 'template_surat_pengantar_litpers.docx',
-            'Surat Permohonan SKBD'                 => 'template_surat_skbd.docx',
-            'Surat Persetujuan Orang Tua/Wali'      => 'template_surat_persetujuan_ortua.docx',
-            'Surat Kesanggupan Calon Pasangan'      => 'template_surat_kesanggupan_pasangan.docx',
-            'Surat Keterangan Usia Calon Pasangan'  => 'template_surat_ket_usia.docx',
-        ];
-
-        $templateFile = $templateMap[$request->jenis_surat] ?? null;
-        if (!$templateFile) {
+        $documentType = \App\Models\MarriageDocumentType::where('code', $request->jenis_surat)->first();
+        if (!$documentType) {
             return redirect()->back()->with('error', 'Jenis surat tidak dikenali.');
         }
 
-        $templatePath = storage_path('app/templates/' . $templateFile);
+        if (!$documentType->template_path) {
+            return redirect()->back()->with('error', 'Template untuk surat ini belum tersedia.');
+        }
+
+        $templatePath = storage_path('app/' . $documentType->template_path);
 
         if (!file_exists($templatePath)) {
             return redirect()->back()->with('info',
-                'Template "' . $templateFile . '" belum diunggah. Silakan upload di menu Pengaturan Template terlebih dahulu.'
+                'Template fisik tidak ditemukan: ' . $documentType->template_path . '. Silakan upload di menu Pengaturan Template terlebih dahulu.'
             );
         }
 
@@ -286,7 +306,16 @@ class AdminMarriageApplicationController extends Controller
             MarriageApplication::STATUS_SELESAI
         ];
 
-        if (!in_array($application->status, $allowedStatusesForLetter)) {
+        if ($letter->jenis_surat === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+        }
+
+        if ($letter->jenis_surat === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            abort(403, 'Akses ditolak. Surat Izin Nikah final hanya dapat diakses setelah pengajuan disetujui akhir (DISETUJUI).');
+        }
+
+        if ($letter->jenis_surat !== 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, $allowedStatusesForLetter)) {
             abort(403, 'Akses ditolak. Surat belum tersedia untuk status saat ini.');
         }
 

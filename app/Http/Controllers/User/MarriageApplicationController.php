@@ -317,12 +317,15 @@ class MarriageApplicationController extends Controller
             ->findOrFail($id);
 
         // ─── Document Requirements ─────────────────────────────
-        $docTypes = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+        $docTypes = MarriageDocumentType::where(function ($q) {
+                $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                  ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            })
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
 
-        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA');
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA' || $dt->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
         
         $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
             if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
@@ -423,6 +426,12 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
         
+        $request->validate([
+            'type_code' => 'required|string'
+        ]);
+        
+        $typeCode = $request->type_code;
+
         $allowedStatusesForLetter = [
             MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
             MarriageApplication::STATUS_PERLU_PERBAIKAN,
@@ -431,15 +440,18 @@ class MarriageApplicationController extends Controller
             MarriageApplication::STATUS_SELESAI
         ];
 
-        if (!in_array($application->status, $allowedStatusesForLetter)) {
+        if ($typeCode === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+        }
+
+        if ($typeCode === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            return redirect()->back()->with('error', 'Surat Izin Nikah final hanya dapat digenerate setelah pengajuan disetujui akhir (DISETUJUI).');
+        }
+
+        if ($typeCode !== 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, $allowedStatusesForLetter)) {
             return redirect()->back()->with('error', 'Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui Admin.');
         }
-        
-        $request->validate([
-            'type_code' => 'required|string'
-        ]);
-        
-        $typeCode = $request->type_code;
         
         $documentType = MarriageDocumentType::where('code', $typeCode)->firstOrFail();
         
@@ -492,7 +504,16 @@ class MarriageApplicationController extends Controller
             MarriageApplication::STATUS_SELESAI
         ];
 
-        if (!in_array($application->status, $allowedStatusesForLetter)) {
+        if ($letter->jenis_surat === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+        }
+
+        if ($letter->jenis_surat === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            abort(403, 'Akses ditolak. Surat Izin Nikah final hanya dapat diakses setelah pengajuan disetujui akhir (DISETUJUI).');
+        }
+
+        if ($letter->jenis_surat !== 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, $allowedStatusesForLetter)) {
             abort(403, 'Akses ditolak. Surat belum tersedia untuk status saat ini.');
         }
 
