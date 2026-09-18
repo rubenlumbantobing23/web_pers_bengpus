@@ -132,6 +132,51 @@ $partner = $application->partner;
                 </form>
             </div>
 
+            {{-- Surat Pengantar --}}
+            @if(in_array($application->status, ['PENGAJUAN_DISETUJUI', 'PERLU_PERBAIKAN', 'DIVERIFIKASI', 'DISETUJUI', 'SELESAI']))
+            <div class="glass-card">
+                <h3 style="font-size: 0.95rem; color: var(--accent-gold); font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <i class="fa-solid fa-file-signature"></i> Surat Pengantar
+                </h3>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                    <i class="fa-solid fa-circle-info"></i> DUMMY TEMPLATE — DEVELOPMENT ONLY
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    @foreach($coverLetters as $cover)
+                    @php 
+                        $letter = $application->letters->where('jenis_surat', $cover->code)->first(); 
+                    @endphp
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);">
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">{{ $cover->name }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                @if($letter)
+                                    Dibuat: {{ $letter->generated_at?->format('d M Y H:i') }}
+                                @else
+                                    <span style="color: #94a3b8;">Belum Dibuat</span>
+                                @endif
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <form action="{{ route('admin.admin.pengajuan_nikah.generate_letter', $application->id) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="jenis_surat" value="{{ $cover->code }}">
+                                <button type="submit" class="btn-military" style="font-size: 0.7rem; padding: 6px 10px; background: rgba(100,116,139,0.3); border-color: rgba(100,116,139,0.6);" onclick="return confirm('Generate surat ini?')">
+                                    <i class="fa-solid fa-rotate"></i> Generate
+                                </button>
+                            </form>
+                            @if($letter)
+                            <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $letter->id]) }}" class="btn-action btn-view" style="padding: 6px 10px;" title="Download Surat">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             {{-- Generate Letter --}}
             <div class="glass-card">
                 <h3 style="font-size: 0.95rem; color: var(--accent-gold); font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">

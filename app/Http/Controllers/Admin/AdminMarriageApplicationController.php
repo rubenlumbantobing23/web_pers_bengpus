@@ -55,7 +55,11 @@ class AdminMarriageApplicationController extends Controller
             return true;
         });
 
-        return view('admin.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan'));
+        $coverLetters = \App\Models\MarriageDocumentType::whereIn('code', [
+            'PENGANTAR_NA', 'PENGANTAR_KESDAM', 'PENGANTAR_BINTALDAM', 'PENGANTAR_LITPERS', 'PENGANTAR_SKBD'
+        ])->where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan', 'coverLetters'));
     }
 
     // ─── verifyDocument ──────────────────────────────────
