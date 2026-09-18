@@ -94,14 +94,30 @@ class AdminMarriageApplicationController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status'  => 'required|in:DIVERIFIKASI,DISETUJUI,DITOLAK,SELESAI',
+            'status'  => 'required|in:PENGAJUAN_DISETUJUI,DITOLAK,DIVERIFIKASI,DISETUJUI,SELESAI',
             'catatan' => 'nullable|string|max:1000',
         ]);
 
         $application = MarriageApplication::findOrFail($id);
+        $newStatus = $request->status;
 
-        // Guard: cannot move to DIVERIFIKASI if not all required docs are present and DITERIMA
-        if ($request->status === 'DIVERIFIKASI') {
+        // --- State Machine Transitions ---
+        if ($newStatus === MarriageApplication::STATUS_PENGAJUAN_DISETUJUI) {
+            if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
+                return redirect()->back()->with('error', 'Hanya pengajuan status DIAJUKAN yang dapat disetujui awal.');
+            }
+        } elseif ($newStatus === MarriageApplication::STATUS_DITOLAK) {
+            if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
+                return redirect()->back()->with('error', 'Penolakan awal hanya dapat dilakukan pada status DIAJUKAN.');
+            }
+            if (empty($request->catatan)) {
+                return redirect()->back()->with('error', 'Alasan penolakan wajib diisi.');
+            }
+        } elseif ($newStatus === MarriageApplication::STATUS_DIVERIFIKASI) {
+            if (!in_array($application->status, [MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, MarriageApplication::STATUS_PERLU_PERBAIKAN])) {
+                return redirect()->back()->with('error', 'Status tidak valid untuk DIVERIFIKASI.');
+            }
+            
             $docTypes = \App\Models\MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
                 ->where('is_active', true)
                 ->get();
@@ -122,21 +138,58 @@ class AdminMarriageApplicationController extends Controller
                     return redirect()->back()->with('error', 'Masih terdapat dokumen yang ' . $doc->status_verifikasi . '. Pastikan semua dokumen DITERIMA sebelum mengubah status ke DIVERIFIKASI.');
                 }
             }
+        } elseif ($newStatus === MarriageApplication::STATUS_DISETUJUI) {
+            if ($application->status !== MarriageApplication::STATUS_DIVERIFIKASI) {
+                return redirect()->back()->with('error', 'Hanya pengajuan status DIVERIFIKASI yang dapat diberikan Approval Akhir (DISETUJUI).');
+            }
+
+            try {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($application, $request, $newStatus) {
+                    $application->update([
+                        'status'        => $newStatus,
+                        'catatan_admin' => $request->catatan,
+                    ]);
+
+                    $application->personel()->update([
+                        'status_pernikahan' => 'Menikah'
+                    ]);
+
+                    MarriageStatusHistory::create([
+                        'marriage_application_id' => $application->id,
+                        'status'     => $newStatus,
+                        'catatan'    => $request->catatan ?: 'Approval Akhir diberikan oleh Kabeng.',
+                        'changed_by' => Auth::id(),
+                    ]);
+                });
+                return redirect()->back()->with('success', 'Approval akhir berhasil. Status pernikahan personel telah diubah menjadi Menikah.');
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'Gagal memproses Approval Akhir: ' . $e->getMessage());
+            }
+
+        } elseif ($newStatus === MarriageApplication::STATUS_SELESAI) {
+            if ($application->status !== MarriageApplication::STATUS_DISETUJUI) {
+                return redirect()->back()->with('error', 'Hanya pengajuan status DISETUJUI yang dapat diselesaikan.');
+            }
+        } else {
+            return redirect()->back()->with('error', 'Status tidak dikenali.');
         }
 
-        $application->update([
-            'status'        => $request->status,
-            'catatan_admin' => $request->catatan,
-        ]);
+        // Apply update for non-DISETUJUI statuses
+        if ($newStatus !== MarriageApplication::STATUS_DISETUJUI) {
+            $application->update([
+                'status'        => $newStatus,
+                'catatan_admin' => $request->catatan,
+            ]);
 
-        MarriageStatusHistory::create([
-            'marriage_application_id' => $application->id,
-            'status'     => $request->status,
-            'catatan'    => $request->catatan,
-            'changed_by' => Auth::id(),
-        ]);
+            MarriageStatusHistory::create([
+                'marriage_application_id' => $application->id,
+                'status'     => $newStatus,
+                'catatan'    => $request->catatan,
+                'changed_by' => Auth::id(),
+            ]);
+        }
 
-        return redirect()->back()->with('success', 'Status pengajuan berhasil diubah ke ' . str_replace('_', ' ', $request->status) . '.');
+        return redirect()->back()->with('success', 'Status pengajuan berhasil diubah ke ' . str_replace('_', ' ', $newStatus) . '.');
     }
 
     // ─── generateLetter ──────────────────────────────────
@@ -147,6 +200,18 @@ class AdminMarriageApplicationController extends Controller
         ]);
 
         $application = MarriageApplication::with(['personel', 'partner'])->findOrFail($id);
+        
+        $allowedStatusesForLetter = [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI
+        ];
+
+        if (!in_array($application->status, $allowedStatusesForLetter)) {
+            return redirect()->back()->with('error', 'Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui (PENGAJUAN_DISETUJUI).');
+        }
 
         // Map jenis_surat to template filename
         $templateMap = [
@@ -212,6 +277,18 @@ class AdminMarriageApplicationController extends Controller
     {
         $application = MarriageApplication::findOrFail($id);
         $letter      = $application->letters()->findOrFail($letterId);
+
+        $allowedStatusesForLetter = [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI
+        ];
+
+        if (!in_array($application->status, $allowedStatusesForLetter)) {
+            abort(403, 'Akses ditolak. Surat belum tersedia untuk status saat ini.');
+        }
 
         if (!Storage::disk('private')->exists($letter->file_generated)) {
             abort(404, 'File surat tidak ditemukan di storage.');

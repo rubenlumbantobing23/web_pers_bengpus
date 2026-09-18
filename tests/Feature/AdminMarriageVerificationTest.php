@@ -221,6 +221,7 @@ class AdminMarriageVerificationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create(['role' => 'user']);
         $app = $this->createDummyApplication($user);
+        $app->update(['status' => \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI]);
 
         // Intentionally NOT creating all required documents
         
@@ -239,6 +240,7 @@ class AdminMarriageVerificationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create(['role' => 'user']);
         $app = $this->createDummyApplication($user);
+        $app->update(['status' => \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI]);
 
         // Create all required documents but set them to BELUM_DIPERIKSA
         $reqs = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])->where('is_active', true)->get();
@@ -261,6 +263,7 @@ class AdminMarriageVerificationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create(['role' => 'user']);
         $app = $this->createDummyApplication($user);
+        $app->update(['status' => \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI]);
 
         $reqs = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])->where('is_active', true)->get();
         foreach ($reqs as $r) {
@@ -286,7 +289,7 @@ class AdminMarriageVerificationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create(['role' => 'user']);
         // non-ASN partner
-        $app = $this->createDummyApplication($user, 'DIAJUKAN', false);
+        $app = $this->createDummyApplication($user, \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, false);
 
         $reqs = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])->where('is_active', true)->get();
         foreach ($reqs as $r) {
@@ -308,7 +311,7 @@ class AdminMarriageVerificationTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $user = User::factory()->create(['role' => 'user']);
         // ASN partner
-        $app = $this->createDummyApplication($user, 'DIAJUKAN', true);
+        $app = $this->createDummyApplication($user, \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, true);
 
         $reqs = MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])->where('is_active', true)->get();
         foreach ($reqs as $r) {

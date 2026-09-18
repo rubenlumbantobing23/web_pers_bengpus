@@ -56,6 +56,11 @@ class MarriageApplicationController extends Controller
                 ->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap. Silakan hubungi Admin Personalia.');
         }
 
+        if ($personel->status_pernikahan === 'Menikah') {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'Status pernikahan Anda saat ini adalah Menikah. Anda tidak dapat membuat pengajuan nikah baru.');
+        }
+
         [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
 
         if (!$peranAnggota) {
@@ -78,6 +83,10 @@ class MarriageApplicationController extends Controller
 
         if (empty($personel->jenis_kelamin)) {
             return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap.');
+        }
+
+        if ($personel->status_pernikahan === 'Menikah') {
+            return redirect()->route('user.dashboard')->with('error', 'Status pernikahan Anda saat ini adalah Menikah. Anda tidak dapat membuat pengajuan nikah baru.');
         }
 
         [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
@@ -160,6 +169,10 @@ class MarriageApplicationController extends Controller
 
         if (empty($personel->jenis_kelamin)) {
             return redirect()->route('user.dashboard')->with('error', 'Data jenis kelamin pada profil personel Anda belum lengkap.');
+        }
+
+        if ($personel->status_pernikahan === 'Menikah') {
+            return redirect()->route('user.dashboard')->with('error', 'Status pernikahan Anda saat ini adalah Menikah. Anda tidak dapat membuat pengajuan nikah baru.');
         }
 
         [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
@@ -274,8 +287,8 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->with(['partner', 'documents'])->findOrFail($id);
 
-        if ($application->status !== 'DRAFT') {
-            return redirect()->back()->with('error', 'Hanya pengajuan berstatus DRAFT yang dapat disubmit.');
+        if ($application->status !== MarriageApplication::STATUS_DRAFT && $application->status !== MarriageApplication::STATUS_DITOLAK) {
+            return redirect()->back()->with('error', 'Hanya pengajuan berstatus DRAFT atau DITOLAK yang dapat disubmit.');
         }
 
         if (!$application->partner) {
@@ -329,7 +342,7 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
 
-        if (!in_array($application->status, ['DRAFT', 'DIAJUKAN', 'PERLU_PERBAIKAN'])) {
+        if (!in_array($application->status, [MarriageApplication::STATUS_DRAFT, MarriageApplication::STATUS_DIAJUKAN, MarriageApplication::STATUS_PERLU_PERBAIKAN])) {
             return redirect()->back()->with('error', 'Dokumen tidak dapat diunggah pada status ' . $application->status . '.');
         }
 
@@ -410,6 +423,18 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
         
+        $allowedStatusesForLetter = [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI
+        ];
+
+        if (!in_array($application->status, $allowedStatusesForLetter)) {
+            return redirect()->back()->with('error', 'Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui Admin.');
+        }
+        
         $request->validate([
             'type_code' => 'required|string'
         ]);
@@ -459,6 +484,18 @@ class MarriageApplicationController extends Controller
         $application = Auth::user()->marriageApplications()->findOrFail($id);
         $letter      = $application->letters()->findOrFail($letterId);
         
+        $allowedStatusesForLetter = [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI
+        ];
+
+        if (!in_array($application->status, $allowedStatusesForLetter)) {
+            abort(403, 'Akses ditolak. Surat belum tersedia untuk status saat ini.');
+        }
+
         if (!Storage::disk('private')->exists($letter->file_generated)) {
             abort(404, 'File surat tidak ditemukan.');
         }

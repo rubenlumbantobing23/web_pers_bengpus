@@ -141,7 +141,7 @@ class MarriageLetterGenerationTest extends TestCase
             'kabupaten_domisili' => '-',
             'provinsi_domisili' => '-',
             'kua_tujuan' => '-',
-            'status' => 'DRAFT'
+            'status' => \App\Models\MarriageApplication::STATUS_PENGAJUAN_DISETUJUI
         ]);
 
         $codes = ['PENGANTAR_NA', 'PENGANTAR_KESDAM', 'PENGANTAR_BINTALDAM', 'PENGANTAR_LITPERS', 'PENGANTAR_SKBD'];
