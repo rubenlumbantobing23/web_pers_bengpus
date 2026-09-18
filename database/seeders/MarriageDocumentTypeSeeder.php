@@ -14,7 +14,7 @@ class MarriageDocumentTypeSeeder extends Seeder
     {
         $documents = [
             // A. SURAT DARI SATUAN
-            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => null],
+            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_surat_permohonan.docx'],
             ['code' => 'PENGANTAR_NA', 'name' => 'Surat Pengantar Nikah (NA)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_na.docx'],
             ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_kesdam.docx'],
             ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_bintaldam.docx'],

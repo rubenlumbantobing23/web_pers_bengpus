@@ -79,6 +79,8 @@ class OrganizationStructureService
             $searchNames = ['KABAGUM', 'BAGUM'];
         } elseif ($normalizedRole === 'kabagrendal') {
             $searchNames = ['KABAGRENDAL', 'BAGRENDAL'];
+        } elseif ($normalizedRole === 'pasipers') {
+            $searchNames = ['PASIPERS', 'SIPERS'];
         }
 
         $unit = OrganizationUnit::where(function($q) use ($searchNames) {
