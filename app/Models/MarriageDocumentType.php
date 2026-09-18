@@ -21,6 +21,7 @@ class MarriageDocumentType extends Model
         'is_active',
         'sort_order',
         'description',
+        'template_path',
     ];
 
     protected $casts = [

@@ -268,14 +268,18 @@ class AdminMarriageApplicationController extends Controller
             $outputName = str_replace(['/', '\\', ' '], '_', $request->jenis_surat) . '_' . str_replace(' ', '_', $application->personel->nama);
             $filePath   = $generator->generate($application, $templatePath, $outputName);
 
-            MarriageLetter::create([
-                'marriage_application_id' => $application->id,
-                'jenis_surat'   => $request->jenis_surat,
-                'file_generated'=> $filePath,
-                'status'        => 'GENERATED',
-                'generated_at'  => now(),
-                'generated_by'  => Auth::id(),
-            ]);
+            MarriageLetter::updateOrCreate(
+                [
+                    'marriage_application_id' => $application->id,
+                    'jenis_surat'             => $request->jenis_surat,
+                ],
+                [
+                    'file_generated'=> $filePath,
+                    'status'        => 'TERSEDIA',
+                    'generated_at'  => now(),
+                    'generated_by'  => Auth::id(),
+                ]
+            );
 
             return redirect()->back()->with('success', $request->jenis_surat . ' berhasil di-generate.');
         } catch (\Exception $e) {

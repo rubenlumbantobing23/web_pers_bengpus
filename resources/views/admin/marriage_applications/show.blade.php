@@ -177,6 +177,47 @@ $partner = $application->partner;
             </div>
             @endif
 
+            {{-- Surat Izin Nikah Final --}}
+            @if(in_array($application->status, ['DISETUJUI', 'SELESAI']))
+            <div class="glass-card">
+                <h3 style="font-size: 0.95rem; color: var(--accent-gold); font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                    <i class="fa-solid fa-stamp"></i> Surat Izin Nikah Final
+                </h3>
+                @php 
+                    $finalLetter = $application->letters->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')->first(); 
+                @endphp
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.07);">
+                    <div>
+                        <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">Surat Izin Nikah Final</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                            @if($finalLetter)
+                                Status: <span style="color: #34d399;">{{ $application->status === 'SELESAI' ? 'Selesai' : 'Tersedia' }}</span><br>
+                                Dibuat: {{ $finalLetter->generated_at?->format('d M Y H:i') }}
+                            @else
+                                Status: <span style="color: #94a3b8;">Belum Dibuat</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        @if(!$finalLetter && $application->status === 'DISETUJUI')
+                        <form action="{{ route('admin.admin.pengajuan_nikah.generate_letter', $application->id) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="jenis_surat" value="SURAT_IZIN_NIKAH_FINAL">
+                            <button type="submit" class="btn-military" style="font-size: 0.75rem; padding: 8px 12px;" onclick="return confirm('Generate Surat Izin Nikah Final?')">
+                                <i class="fa-solid fa-rotate"></i> Generate Surat Izin Nikah
+                            </button>
+                        </form>
+                        @endif
+                        @if($finalLetter)
+                        <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $finalLetter->id]) }}" class="btn-military" style="font-size: 0.75rem; padding: 8px 12px;" title="Download Surat Izin Nikah Final">
+                            <i class="fa-solid fa-download"></i> Download Surat Izin Nikah
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- Arsip Surat Tercetak --}}
             @if($application->letters->isNotEmpty())
             <div class="glass-card">

@@ -71,6 +71,7 @@ class MarriageApplicationApprovalTest extends TestCase
             'category' => 'SURAT_FINAL',
             'owner_type' => 'ANGGOTA',
             'source_type' => 'SYSTEM',
+            'template_path' => 'templates/marriage/dummy_surat_izin_nikah_final.docx',
             'is_active' => true,
         ]);
         
@@ -347,6 +348,24 @@ class MarriageApplicationApprovalTest extends TestCase
 
         $response = $this->actingAs($this->normalUser)->get(route('user.pengajuan_nikah.download_letter', [$this->application->id, $letter->id]));
         $response->assertStatus(403);
+    }
+
+    // 15. Admin can generate final letter when status is DISETUJUI
+    public function test_admin_can_generate_final_letter_when_disetujui()
+    {
+        $this->application->update(['status' => MarriageApplication::STATUS_DISETUJUI]);
+        
+        $response = $this->actingAs($this->adminUser)->post(route('admin.admin.pengajuan_nikah.generate_letter', $this->application->id), [
+            'jenis_surat' => 'SURAT_IZIN_NIKAH_FINAL'
+        ]);
+
+        if (session('error') || session('info')) dump(session()->all());
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('marriage_letters', [
+            'marriage_application_id' => $this->application->id,
+            'jenis_surat' => 'SURAT_IZIN_NIKAH_FINAL',
+            'status' => 'TERSEDIA'
+        ]);
     }
 }
 
