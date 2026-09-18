@@ -84,11 +84,21 @@ class MarriageLetterGenerator
         // 5. Data Pejabat via OrganizationStructureService
         try {
             $structureService = app(\App\Services\OrganizationStructureService::class);
-            $pasipers = $structureService->getSignerPersonel('pasipers');
-            if ($pasipers) {
-                $templateProcessor->setValue('nama_pejabat',    $pasipers->nama);
-                $templateProcessor->setValue('pangkat_pejabat', trim($pasipers->pangkat_golongan));
-                $templateProcessor->setValue('jabatan_pejabat', 'a.n. Kepala Bengkel Pusat Komunikasi dan Elektronika TNI AD\nKabagum\nu.b.\nPasipers');
+            
+            $isFinalLetter = stripos($outputName, 'SURAT_IZIN_NIKAH_FINAL') !== false;
+            
+            if ($isFinalLetter) {
+                $signer = $structureService->getSignerPersonel('kabeng');
+                $jabatanPejabat = 'Kepala Bengkel Pusat Komunikasi dan Elektronika TNI AD';
+            } else {
+                $signer = $structureService->getSignerPersonel('pasipers');
+                $jabatanPejabat = "a.n. Kepala Bengkel Pusat Komunikasi dan Elektronika TNI AD\nKabagum\nu.b.\nPasipers";
+            }
+
+            if ($signer) {
+                $templateProcessor->setValue('nama_pejabat',    $signer->nama);
+                $templateProcessor->setValue('pangkat_pejabat', trim($signer->pangkat_golongan));
+                $templateProcessor->setValue('jabatan_pejabat', $jabatanPejabat);
             } else {
                 $templateProcessor->setValue('nama_pejabat',    '');
                 $templateProcessor->setValue('pangkat_pejabat', '');

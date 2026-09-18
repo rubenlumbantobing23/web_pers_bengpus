@@ -53,7 +53,7 @@ class MarriageDocumentTypeSeeder extends Seeder
             ['code' => 'DOKUMEN_LAIN_CALON_PASANGAN', 'name' => 'Dokumen Lain Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
 
             // E. SURAT FINAL
-            ['code' => 'SURAT_IZIN_NIKAH_FINAL', 'name' => 'Surat Izin Nikah', 'category' => 'SURAT_FINAL', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM'],
+            ['code' => 'SURAT_IZIN_NIKAH_FINAL', 'name' => 'Surat Izin Nikah', 'category' => 'SURAT_FINAL', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_surat_izin_nikah_final.docx'],
         ];
 
         $sortOrder = 10;
