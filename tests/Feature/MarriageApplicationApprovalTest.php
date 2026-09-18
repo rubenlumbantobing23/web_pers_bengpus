@@ -367,5 +367,26 @@ class MarriageApplicationApprovalTest extends TestCase
             'status' => 'TERSEDIA'
         ]);
     }
+
+    // 16. User tidak dapat download final letter milik orang lain (Security Test)
+    public function test_user_cannot_download_others_final_letter()
+    {
+        $this->application->update(['status' => MarriageApplication::STATUS_DISETUJUI]);
+        
+        $filePath = 'marriage_letters/final_' . $this->application->id . '.docx';
+        Storage::disk('private')->put($filePath, 'dummy content');
+
+        $letter = MarriageLetter::create([
+            'marriage_application_id' => $this->application->id,
+            'jenis_surat' => 'SURAT_IZIN_NIKAH_FINAL',
+            'file_generated' => $filePath,
+            'status' => 'TERSEDIA'
+        ]);
+
+        $otherUser = User::factory()->create(['role' => 'user']);
+        
+        $response = $this->actingAs($otherUser)->get(route('user.pengajuan_nikah.download_letter', [$this->application->id, $letter->id]));
+        $response->assertStatus(404);
+    }
 }
 

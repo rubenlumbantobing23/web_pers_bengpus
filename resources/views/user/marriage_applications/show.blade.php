@@ -223,6 +223,41 @@
             </div>
             @endif
 
+            {{-- Surat Izin Nikah Final --}}
+            @if(in_array($application->status, ['DISETUJUI', 'SELESAI']))
+            <div class="glass-card">
+                <h3 style="font-size: 1rem; color: var(--accent-gold); font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+                    <i class="fa-solid fa-stamp"></i> Surat Izin Nikah Final
+                </h3>
+                @php 
+                    $finalLetter = $application->letters->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')->first(); 
+                    $physicalExists = $finalLetter && \Illuminate\Support\Facades\Storage::disk('private')->exists($finalLetter->file_generated);
+                @endphp
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">
+                    <div>
+                        <div style="font-weight: 600; color: #e2e8f0; font-size: 0.9rem;">Surat Izin Nikah Final</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+                            Status: 
+                            @if($physicalExists)
+                                <span style="color: #34d399;">{{ $application->status === 'SELESAI' ? 'Selesai' : 'Surat Tersedia' }}</span>
+                            @else
+                                <span style="color: #94a3b8;">Belum Tersedia</span>
+                            @endif
+                        </div>
+                    </div>
+                    @if($physicalExists)
+                    <div>
+                        <a href="{{ route('user.pengajuan_nikah.download_letter', [$application->id, $finalLetter->id]) }}" class="btn-military" style="font-size: 0.75rem; padding: 8px 12px;" title="Download Surat Izin Nikah Final">
+                            <i class="fa-solid fa-download"></i> Download Surat Izin Nikah
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
+        </div>
+
         {{-- RIGHT COLUMN: Documents --}}
         <div class="glass-card" style="position: sticky; top: 90px;">
             <h3 style="font-size: 1rem; color: var(--accent-gold); font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
