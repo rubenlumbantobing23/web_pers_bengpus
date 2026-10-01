@@ -91,10 +91,11 @@ class AuthController extends Controller
     {
         $request->validate([
             'nrp_nip' => ['required', 'string'],
+            'tgl_lahir' => ['required', 'date'],
         ]);
 
         $nrpNipClean = trim($request->nrp_nip);
-        $personel = Personel::where('nrp_nip', $nrpNipClean)->first();
+        $personel = Personel::where('nrp_nip', $nrpNipClean)->where('tgl_lahir', $request->tgl_lahir)->first();
 
         if (!$personel) {
             return response()->json([
@@ -140,11 +141,11 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $nrpNipClean = trim($request->nrp_nip);
-        $personel = Personel::where('nrp_nip', $nrpNipClean)->first();
+        $personel = Personel::where('nrp_nip', $nrpNipClean)->where('tgl_lahir', $request->tgl_lahir)->first();
 
         if (!$personel) {
             return back()->withInput()->withErrors([
-                'nrp_nip' => 'NRP/NIP belum terdaftar pada Nominatif Personel.',
+                'nrp_nip' => 'Data NRP/NIP atau Tanggal Lahir tidak cocok dengan data personel yang ada.',
             ]);
         }
 
@@ -166,6 +167,7 @@ class AuthController extends Controller
 
         $rules = [
             'nrp_nip' => ['required', 'string', 'max:50'],
+            'tgl_lahir' => ['required', 'date'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'no_hp' => ['required', 'string', 'max:50'],

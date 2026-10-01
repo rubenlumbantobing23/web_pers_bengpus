@@ -303,7 +303,7 @@ $statusLabel = $request->status === 'approved'
         $tempFile = tempnam(sys_get_temp_dir(), 'phpword');
         $templateProcessor->saveAs($tempFile);
         
-        Storage::disk('public')->put($savePath, file_get_contents($tempFile));
+        Storage::disk('local')->put($savePath, file_get_contents($tempFile));
         @unlink($tempFile);
 
         LeaveOfficialLetter::create([
@@ -327,10 +327,30 @@ $statusLabel = $request->status === 'approved'
             abort(404, 'Surat Cuti Resmi belum diterbitkan.');
         }
 
-        if (!Storage::disk('public')->exists($letter->file_path)) {
+        if (!Storage::disk('local')->exists($letter->file_path) && !Storage::disk('public')->exists($letter->file_path)) {
             abort(404, 'File Surat Cuti Resmi tidak ditemukan di server.');
         }
 
-        return Storage::disk('public')->download($letter->file_path);
+        if (!Storage::disk('local')->exists($letter->file_path) && Storage::disk('public')->exists($letter->file_path)) {
+            return Storage::disk('public')->download($letter->file_path);
+        }
+
+        return Storage::disk('local')->download($letter->file_path);
+    }
+
+    public function downloadDocument($id, $docId)
+    {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+        $document = \App\Models\LeaveRequestDocument::where('leave_request_id', $id)->findOrFail($docId);
+
+        if (!Storage::disk('local')->exists($document->file_path) && !Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'File lampiran tidak ditemukan di server.');
+        }
+
+        if (!Storage::disk('local')->exists($document->file_path) && Storage::disk('public')->exists($document->file_path)) {
+            return Storage::disk('public')->download($document->file_path);
+        }
+
+        return Storage::disk('local')->download($document->file_path);
     }
 }

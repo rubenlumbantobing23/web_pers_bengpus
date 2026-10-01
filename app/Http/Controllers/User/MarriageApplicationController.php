@@ -63,6 +63,15 @@ class MarriageApplicationController extends Controller
                 ->with('error', 'Status pernikahan Anda saat ini adalah Menikah. Anda tidak dapat membuat pengajuan nikah baru.');
         }
 
+        $activeApplication = MarriageApplication::where('user_id', $user->id)
+            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'SELESAI'])
+            ->first();
+
+        if ($activeApplication) {
+            return redirect()->route('user.pengajuan_nikah.show', $activeApplication->id)
+                ->with('error', 'Anda sudah memiliki pengajuan nikah yang sedang diproses. Anda tidak dapat membuat pengajuan baru.');
+        }
+
         [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
 
         if (!$peranAnggota) {
@@ -89,6 +98,15 @@ class MarriageApplicationController extends Controller
 
         if ($personel->status_pernikahan === 'Menikah') {
             return redirect()->route('user.dashboard')->with('error', 'Status pernikahan Anda saat ini adalah Menikah. Anda tidak dapat membuat pengajuan nikah baru.');
+        }
+
+        $activeApplication = MarriageApplication::where('user_id', $user->id)
+            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'SELESAI'])
+            ->first();
+
+        if ($activeApplication) {
+            return redirect()->route('user.pengajuan_nikah.show', $activeApplication->id)
+                ->with('error', 'Anda sudah memiliki pengajuan nikah yang sedang diproses. Anda tidak dapat membuat pengajuan baru.');
         }
 
         [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
@@ -661,6 +679,8 @@ class MarriageApplicationController extends Controller
                 'file_size'          => $file->getSize(),
                 'status_verifikasi'  => 'BELUM_DIPERIKSA',
                 'catatan_verifikasi' => null,
+                'verified_at'        => null,
+                'verified_by'        => null,
                 'uploaded_at'        => now(),
             ]);
         } else {

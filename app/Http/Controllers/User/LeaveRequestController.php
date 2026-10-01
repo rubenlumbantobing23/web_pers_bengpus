@@ -451,7 +451,7 @@ class LeaveRequestController extends Controller
         if ($request->hasFile('permohonan_document')) {
             $file = $request->file('permohonan_document');
             $filename = time() . '_permohonan_' . $file->getClientOriginalName();
-            $path = $file->storeAs('leave_documents', $filename, 'public');
+            $path = $file->storeAs('leave_documents', $filename, 'local');
 
             LeaveRequestDocument::create([
                 'leave_request_id' => $leaveRequest->id,
@@ -465,7 +465,7 @@ class LeaveRequestController extends Controller
         if ($request->hasFile('supporting_documents')) {
             foreach ($request->file('supporting_documents') as $file) {
                 $filename = time() . '_pendukung_' . $file->getClientOriginalName();
-                $path = $file->storeAs('leave_documents', $filename, 'public');
+                $path = $file->storeAs('leave_documents', $filename, 'local');
 
                 LeaveRequestDocument::create([
                     'leave_request_id' => $leaveRequest->id,
@@ -521,11 +521,16 @@ class LeaveRequestController extends Controller
             abort(404, 'Surat Cuti Resmi belum diterbitkan oleh Admin.');
         }
 
-        if (!Storage::disk('public')->exists($letter->file_path)) {
+        if (!Storage::disk('local')->exists($letter->file_path) && !Storage::disk('public')->exists($letter->file_path)) {
             abort(404, 'File Surat Cuti Resmi tidak ditemukan di server.');
         }
 
-        return Storage::disk('public')->download($letter->file_path);
+        // Fallback for existing public files
+        if (!Storage::disk('local')->exists($letter->file_path) && Storage::disk('public')->exists($letter->file_path)) {
+            return Storage::disk('public')->download($letter->file_path);
+        }
+
+        return Storage::disk('local')->download($letter->file_path);
     }
 
     /**
@@ -591,5 +596,21 @@ class LeaveRequestController extends Controller
         };
         @unlink($tempPath);
         return $processor;
+    }
+
+    public function downloadDocument($id, $docId)
+    {
+        $leaveRequest = LeaveRequest::where('user_id', Auth::id())->findOrFail($id);
+        $document = \App\Models\LeaveRequestDocument::where('leave_request_id', $id)->findOrFail($docId);
+
+        if (!Storage::disk('local')->exists($document->file_path) && !Storage::disk('public')->exists($document->file_path)) {
+            abort(404, 'File lampiran tidak ditemukan di server.');
+        }
+
+        if (!Storage::disk('local')->exists($document->file_path) && Storage::disk('public')->exists($document->file_path)) {
+            return Storage::disk('public')->download($document->file_path);
+        }
+
+        return Storage::disk('local')->download($document->file_path);
     }
 }

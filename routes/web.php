@@ -22,16 +22,16 @@ Route::get('/', [AuthController::class, 'showLoginForm'])->name('home');
 
 // Authentication Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/register/check-nrp', [AuthController::class, 'checkNrp'])->name('register.check_nrp');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/register/check-nrp', [AuthController::class, 'checkNrp'])->name('register.check_nrp')->middleware('throttle:10,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email')->middleware('throttle:3,1');
 Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\PasswordResetController::class, 'showResetForm'])->name('password.reset');
-Route::post('/reset-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'reset'])->name('password.update');
+Route::post('/reset-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'reset'])->name('password.update')->middleware('throttle:3,1');
 
 // User / Anggota Routes
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
@@ -47,6 +47,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::post('/leave', [UserLeaveController::class, 'store'])->name('leave.store');
     Route::get('/leave/{id}', [UserLeaveController::class, 'show'])->name('leave.show');
     Route::get('/leave/{id}/surat', [UserLeaveController::class, 'downloadSuratCuti'])->name('leave.download_surat');
+    Route::get('/leave/{id}/documents/{docId}/download', [UserLeaveController::class, 'downloadDocument'])->name('leave.download_document');
     Route::post('/leave/{id}/cancel', [UserLeaveController::class, 'cancel'])->name('leave.cancel');
 
 
@@ -84,6 +85,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/leave', [AdminLeaveController::class, 'index'])->name('leave.index');
     Route::get('/leave/{id}', [AdminLeaveController::class, 'show'])->name('leave.show');
     Route::get('/leave/{id}/surat', [AdminLeaveController::class, 'downloadSuratCuti'])->name('leave.download_surat');
+    Route::get('/leave/{id}/documents/{docId}/download', [AdminLeaveController::class, 'downloadDocument'])->name('leave.download_document');
     Route::post('/leave/{id}/status', [AdminLeaveController::class, 'updateStatus'])->name('leave.update_status');
     Route::post('/leave/{id}/issue-letter', [AdminLeaveController::class, 'issueSuratCuti'])->name('leave.issue_letter');
 

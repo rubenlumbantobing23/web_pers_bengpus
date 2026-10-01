@@ -197,6 +197,11 @@ class AdminMarriageApplicationController extends Controller
         ]);
 
         $application = MarriageApplication::findOrFail($id);
+        
+        if (in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            return redirect()->back()->with('error', 'Pengajuan sudah dalam tahap akhir dan verifikasi dokumen tidak dapat diubah lagi.');
+        }
+
         $document    = $application->documents()->findOrFail($request->document_id);
 
         $document->update([
@@ -225,8 +230,12 @@ class AdminMarriageApplicationController extends Controller
         })->where('is_active', true)->get();
 
         $requiredTypes = $docTypes->filter(function ($type) use ($application) {
-            if (in_array($type->code, ['SURAT_PERMOHONAN_IZIN_NIKAH', 'DOKUMEN_LAIN_CALON_PASANGAN'])) {
-                return $type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH';
+            if ($type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
+                return true;
+            }
+
+            if (!$type->is_required) {
+                return false;
             }
 
             if (in_array($type->owner_type, ['ANGGOTA', 'ORANG_TUA_ANGGOTA'])) {

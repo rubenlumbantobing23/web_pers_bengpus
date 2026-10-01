@@ -171,7 +171,7 @@
                 @foreach($leaveRequest->documents as $doc)
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border-radius: 8px;">
                         <span style="font-size: 0.9rem; color: #fff;"><i class="fa-solid fa-file-pdf" style="color: var(--accent-red); margin-right: 8px;"></i> {{ $doc->document_name }}</span>
-                        <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="btn-secondary" style="padding: 6px 14px; font-size: 0.825rem;">
+                        <a href="{{ route('admin.leave.download_document', ['id' => $leaveRequest->id, 'docId' => $doc->id]) }}" target="_blank" class="btn-secondary" style="padding: 6px 14px; font-size: 0.825rem;">
                             <i class="fa-solid fa-download"></i> Unduh Berkas
                         </a>
                     </div>

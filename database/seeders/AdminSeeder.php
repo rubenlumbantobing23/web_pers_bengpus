@@ -11,11 +11,17 @@ class AdminSeeder extends Seeder
 {
     public function run(): void
     {
+        $adminPassword = env('ADMIN_SETUP_PASSWORD');
+        if (empty($adminPassword)) {
+            $adminPassword = \Illuminate\Support\Str::random(12);
+            // In a real scenario, this should be logged securely, but we just set a random one if env is missing to prevent hardcoded passwords
+        }
+
         $adminUser = User::updateOrCreate(
             ['email' => 'admin@bengpuskomlekad.mil.id'],
             [
                 'name' => 'Staf Personalia Admin',
-                'password' => Hash::make('admin123'),
+                'password' => Hash::make($adminPassword),
                 'role' => 'admin',
             ]
         );

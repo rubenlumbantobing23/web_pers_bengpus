@@ -210,10 +210,13 @@
                 <!-- Langkah 1: Pengecekan NRP/NIP -->
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label class="form-label" for="nrp_nip" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">NRP / NIP Terdaftar *</label>
-                    <div style="display: flex; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <input type="text" id="nrp_nip" name="nrp_nip" class="form-control" placeholder="Masukkan NRP / NIP Anda..." value="{{ old('nrp_nip') }}" required style="font-weight: 700; letter-spacing: 1px;" autocomplete="username">
-                        <button type="button" class="btn-secondary" id="btnCheckNrp" onclick="checkNrpNominatif()" style="white-space: nowrap; padding: 0 20px; border-radius: 12px; border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; font-weight: 700; background: rgba(59, 130, 246, 0.1);">
-                            <i class="fa-solid fa-magnifying-glass"></i> CEK
+                        <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir') }}" required>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <button type="button" class="btn-secondary" id="btnCheckNrp" onclick="checkNrpNominatif()" style="width: 100%; padding: 12px; border-radius: 12px; border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; font-weight: 700; background: rgba(59, 130, 246, 0.1);">
+                            <i class="fa-solid fa-magnifying-glass"></i> VERIFIKASI DATA
                         </button>
                     </div>
                     <small style="color: rgba(255,255,255,0.4); display: block; margin-top: 8px; font-size: 0.8rem;">
@@ -325,16 +328,17 @@
 <script>
     function checkNrpNominatif() {
         const nrpNip = document.getElementById('nrp_nip').value.trim();
+        const tglLahir = document.getElementById('tgl_lahir').value;
         const alertBox = document.getElementById('nrpAlertContainer');
         const detailBox = document.getElementById('personelDetailBox');
         const btnCheck = document.getElementById('btnCheckNrp');
 
-        if (!nrpNip) {
+        if (!nrpNip || !tglLahir) {
             alertBox.style.display = 'block';
             alertBox.style.background = 'rgba(239, 68, 68, 0.1)';
             alertBox.style.border = '1px solid rgba(239, 68, 68, 0.2)';
             alertBox.style.color = '#fca5a5';
-            alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; margin-right: 8px;"></i> Silakan masukkan NRP atau NIP terlebih dahulu.';
+            alertBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; margin-right: 8px;"></i> Silakan masukkan NRP / NIP dan Tanggal Lahir terlebih dahulu.';
             detailBox.style.display = 'none';
             return;
         }
@@ -348,7 +352,7 @@
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ nrp_nip: nrpNip })
+            body: JSON.stringify({ nrp_nip: nrpNip, tgl_lahir: tglLahir })
         })
         .then(res => res.json())
         .then(data => {
