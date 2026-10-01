@@ -55,6 +55,11 @@
                 </div>
             </div>
 
+            <a href="{{ route('admin.users.index') }}" class="nav-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>Pengguna Aplikasi</span>
+            </a>
+
             <a href="{{ route('admin.activity_logs.index') }}" class="nav-item {{ request()->routeIs('admin.activity_logs.*') ? 'active' : '' }}">
                 <i class="fa-solid fa-list-check"></i>
                 <span>Log Aktivitas</span>
@@ -86,6 +91,11 @@
                 <i class="fa-solid fa-diagram-project"></i>
                 <span>Struktur & Pejabat</span>
             </a>
+
+            <a href="{{ route('admin.letters.settings.password') }}" class="nav-item {{ request()->routeIs('admin.letters.settings.password') ? 'active' : '' }}">
+                <i class="fa-solid fa-lock"></i>
+                <span>Sandi Arsip Rahasia</span>
+            </a>
         </nav>
 
         <div style="padding: 16px 20px; border-top: 1px solid var(--border-color);">
@@ -99,9 +109,9 @@
                 </div>
             </div>
 
-            <form action="{{ route('logout') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin keluar dari aplikasi?');">
+            <form id="logout-form-admin" action="{{ route('logout') }}" method="POST">
                 @csrf
-                <button type="submit" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px 14px; font-size: 0.85rem;">
+                <button type="button" onclick="confirmLogout('logout-form-admin')" class="btn-secondary" style="width: 100%; justify-content: center; padding: 8px 14px; font-size: 0.85rem;">
                     <i class="fa-solid fa-right-from-bracket"></i> Keluar Admin
                 </button>
             </form>
@@ -134,6 +144,18 @@
                 <div class="alert alert-error">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="alert alert-error" style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 12px; margin-bottom: 20px; border-radius: 4px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; margin-right: 8px;"></i>
+                    <span style="color: #ef4444; font-weight: 600;">Terdapat kesalahan:</span>
+                    <ul style="margin: 8px 0 0 24px; color: #fca5a5; font-size: 0.85rem;">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 

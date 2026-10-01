@@ -160,7 +160,7 @@
                 <span style="background: linear-gradient(135deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Anggota</span>
             </h1>
             <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.7; margin-bottom: 32px; max-width: 450px;">
-                Daftarkan akun Anda untuk mengakses portal <strong style="color: #fff;">BENGPUSKOMLEKAD TNI AD</strong>. Registrasi hanya berlaku untuk anggota yang sudah terdata dalam nominatif kesatuan.
+                Daftarkan akun Anda untuk mengakses portal <strong style="color: #fff;">BENGPUSKOMLEKAD TNI AD</strong>. Registrasi hanya berlaku untuk anggota yang sudah terdata dalam nominatif kesatuan dan berstatus aktif.
             </p>
         </div>
 
@@ -211,13 +211,13 @@
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label class="form-label" for="nrp_nip" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">NRP / NIP Terdaftar *</label>
                     <div style="display: flex; gap: 12px;">
-                        <input type="text" id="nrp_nip" name="nrp_nip" class="form-control" placeholder="Masukkan NRP / NIP Anda..." value="{{ old('nrp_nip') }}" required style="font-weight: 700; letter-spacing: 1px;">
+                        <input type="text" id="nrp_nip" name="nrp_nip" class="form-control" placeholder="Masukkan NRP / NIP Anda..." value="{{ old('nrp_nip') }}" required style="font-weight: 700; letter-spacing: 1px;" autocomplete="username">
                         <button type="button" class="btn-secondary" id="btnCheckNrp" onclick="checkNrpNominatif()" style="white-space: nowrap; padding: 0 20px; border-radius: 12px; border-color: rgba(96, 165, 250, 0.4); color: #60a5fa; font-weight: 700; background: rgba(59, 130, 246, 0.1);">
                             <i class="fa-solid fa-magnifying-glass"></i> CEK
                         </button>
                     </div>
                     <small style="color: rgba(255,255,255,0.4); display: block; margin-top: 8px; font-size: 0.8rem;">
-                        * Pastikan NRP/NIP sudah terdata di staf personalia.
+                        * NRP/NIP Anda harus sudah terdaftar pada Nominatif Personel dan berstatus aktif.
                     </small>
                 </div>
 
@@ -260,14 +260,17 @@
                 <!-- Input Kredensial Akun (Email & Password) -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
                     <div class="form-group" style="grid-column: span 2;">
-                        <label class="form-label" for="email" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Alamat Email (Untuk Login) *</label>
-                        <input type="email" id="email" name="email" class="form-control" placeholder="nama@bengpuskomlekad.mil.id" value="{{ old('email') }}" required>
+                        <label class="form-label" for="email" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Alamat Email *</label>
+                        <input type="email" id="email" name="email" class="form-control" placeholder="nama@bengpuskomlekad.mil.id" value="{{ old('email') }}" required autocomplete="email">
+                        <small style="color: rgba(255,255,255,0.4); display: block; margin-top: 8px; font-size: 0.8rem;">
+                            Email digunakan untuk reset password dan menerima notifikasi sistem.
+                        </small>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="password" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Password *</label>
                         <div style="position: relative;">
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 karakter" required style="padding-right: 40px;">
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 karakter" required style="padding-right: 40px;" autocomplete="new-password">
                             <i class="fa-solid fa-eye" id="togglePasswordReg" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                         </div>
                     </div>
@@ -275,7 +278,7 @@
                     <div class="form-group">
                         <label class="form-label" for="password_confirmation" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Konfirmasi *</label>
                         <div style="position: relative;">
-                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required style="padding-right: 40px;">
+                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required style="padding-right: 40px;" autocomplete="new-password">
                             <i class="fa-solid fa-eye" id="togglePasswordConf" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password_confirmation'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                         </div>
                     </div>
@@ -283,19 +286,22 @@
 
                 <!-- Input Personel Tambahan (No HP & Bagian) -->
                 <div id="additionalFieldsBox" style="display: none; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px; padding-top: 24px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
-                    <div class="form-group">
+                    <div class="form-group" id="hpGroup">
                         <label class="form-label" for="no_hp" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Nomor Handphone *</label>
                         <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="0812xxxxxx" required>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group" id="atasanGroup">
                         <label class="form-label" for="organization_unit_id" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Atasan Langsung *</label>
                         <select id="organization_unit_id" name="organization_unit_id" class="form-control" required style="appearance: none; padding-right: 30px;">
                             <option value="">-- Pilih --</option>
                             @foreach($officials as $official)
-                                <option value="{{ $official->organization_unit_id }}">{{ $official->roleLabel }} - {{ $official->personel ? $official->personel->nama : 'Belum Ada Pejabat' }}</option>
+                                <option value="{{ $official->organization_unit_id }}">{{ strtoupper($official->roleLabel) }} — {{ $official->personel ? $official->personel->nama : 'Belum Ada Pejabat' }}</option>
                             @endforeach
                         </select>
+                        <small style="color: rgba(255,255,255,0.4); display: block; margin-top: 8px; font-size: 0.8rem;">
+                            * Atasan Langsung digunakan untuk menentukan jalur administrasi/persetujuan Anda.
+                        </small>
                     </div>
                 </div>
 
@@ -364,8 +370,19 @@
                 if (data.personel.no_hp) {
                     document.getElementById('no_hp').value = data.personel.no_hp;
                 }
-                if (data.personel.organization_unit_id) {
-                    document.getElementById('organization_unit_id').value = data.personel.organization_unit_id;
+                
+                if (data.personel.is_pejabat) {
+                    document.getElementById('atasanGroup').style.display = 'none';
+                    document.getElementById('organization_unit_id').required = false;
+                    document.getElementById('hpGroup').style.gridColumn = 'span 2';
+                } else {
+                    document.getElementById('atasanGroup').style.display = 'block';
+                    document.getElementById('organization_unit_id').required = true;
+                    document.getElementById('hpGroup').style.gridColumn = 'span 1';
+                    
+                    if (data.personel.organization_unit_id) {
+                        document.getElementById('organization_unit_id').value = data.personel.organization_unit_id;
+                    }
                 }
 
             } else {

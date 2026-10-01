@@ -34,12 +34,13 @@
         </a>
 
         @if($doc->status_verifikasi !== 'DITERIMA')
-        <form action="{{ route('admin.admin.pengajuan_nikah.verify_document', $application->id) }}" method="POST" style="display: inline-flex; gap: 4px; align-items: center;">
+        <form action="{{ route('admin.admin.pengajuan_nikah.verify_document', $application->id) }}" method="POST" style="display: inline-flex; gap: 4px; align-items: center;" data-confirm="Dokumen ini akan diterima sebagai dokumen yang sah." data-confirm-title="Terima dokumen?" data-confirm-button="Ya, terima" data-confirm-icon="question">
             @csrf
             <input type="hidden" name="document_id" value="{{ $doc->id }}">
-            <button type="submit" name="status" value="DITERIMA" class="btn-military" 
+            <input type="hidden" name="status" value="DITERIMA">
+            <button type="submit" class="btn-military"
                     style="font-size: 0.72rem; padding: 4px 10px; background: rgba(5,150,105,0.3); border-color: rgba(5,150,105,0.5);"
-                    onclick="return confirm('Terima dokumen ini?')">
+                    >
                 <i class="fa-solid fa-check"></i> Terima
             </button>
         </form>

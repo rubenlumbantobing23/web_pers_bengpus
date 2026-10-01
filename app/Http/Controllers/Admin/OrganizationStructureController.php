@@ -20,7 +20,7 @@ class OrganizationStructureController extends Controller
 
     public function index()
     {
-        // Get units for tree view (only active parents and active children)
+        // Get units for tree view — load root units with 3 levels of children (parent_id based)
         $units = OrganizationUnit::whereNull('parent_id')
             ->where('is_active', true)
             ->with([
@@ -28,8 +28,11 @@ class OrganizationStructureController extends Controller
                 'children' => fn($q) => $q->where('is_active', true)->orderBy('sort_order')->with([
                     'assignments' => fn($aq) => $aq->where('is_active', true)->with('personel'),
                     'children' => fn($cq) => $cq->where('is_active', true)->orderBy('sort_order')->with([
-                        'assignments' => fn($caq) => $caq->where('is_active', true)->with('personel')
-                    ])
+                        'assignments' => fn($caq) => $caq->where('is_active', true)->with('personel'),
+                        'children' => fn($ccq) => $ccq->where('is_active', true)->orderBy('sort_order')->with([
+                            'assignments' => fn($ccaq) => $ccaq->where('is_active', true)->with('personel'),
+                        ]),
+                    ]),
                 ]),
             ])
             ->orderBy('sort_order')

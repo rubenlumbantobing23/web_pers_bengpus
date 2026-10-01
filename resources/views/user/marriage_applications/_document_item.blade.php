@@ -38,7 +38,7 @@
     @endif
 
     {{-- Upload Form (only when status allows it) --}}
-    @if(in_array($application->status, ['DRAFT', 'DIAJUKAN', 'PERLU_PERBAIKAN']))
+    @if(in_array($application->status, ['DRAFT', 'DIAJUKAN', 'PENGAJUAN_DISETUJUI', 'PERLU_PERBAIKAN']))
         {{-- Show upload if not uploaded, OR if it was DITOLAK --}}
         @if(!$doc || $doc->status_verifikasi === 'DITOLAK')
         <form action="{{ route('user.pengajuan_nikah.upload_document', $application->id) }}" method="POST" enctype="multipart/form-data">

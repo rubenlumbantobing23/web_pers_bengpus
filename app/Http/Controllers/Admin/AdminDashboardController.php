@@ -6,48 +6,55 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Personel;
 use App\Models\LeaveRequest;
-use App\Models\MarriageRequest;
+use App\Models\MarriageApplication;
+use App\Models\ActivityLog;
 
 class AdminDashboardController extends Controller
 {
     public function index(Request $request)
     {
+        // 1. STATISTIK UTAMA (General Monitoring)
         $totalPersonel = Personel::where('status_aktif', true)->count();
-        $totalLeaveRequests = LeaveRequest::count();
-        $pendingLeaveRequests = LeaveRequest::where('status', 'pending')->count();
-        $approvedLeaveRequests = LeaveRequest::where('status', 'approved')->count();
+        
+        $totalLeave = LeaveRequest::count();
+        $totalMarriage = MarriageApplication::count();
+        $totalPengajuan = $totalLeave + $totalMarriage;
+        
+        $pendingLeave = LeaveRequest::where('status', 'pending')->count();
+        $pendingMarriage = MarriageApplication::whereIn('status', ['DIAJUKAN', 'PENGAJUAN_DISETUJUI', 'PERLU_PERBAIKAN', 'DIVERIFIKASI'])->count();
+        $totalPending = $pendingLeave + $pendingMarriage;
 
-        $totalMarriageRequests = MarriageRequest::count();
-        $pendingMarriageRequests = MarriageRequest::where('status', 'pending')->count();
+        $recentActivityCount = ActivityLog::where('created_at', '>=', now()->subDays(7))->count();
 
-        // Recent requests combined or filtered
-        $query = LeaveRequest::with(['user.personel', 'leaveType'])
-            ->orderBy('created_at', 'desc');
+        // 2. MONITORING LAYANAN (Detail Module Stats)
+        $leaveStats = [
+            'total' => $totalLeave,
+            'pending' => $pendingLeave,
+            'approved' => LeaveRequest::where('status', 'approved')->count(),
+            'rejected' => LeaveRequest::where('status', 'rejected')->count(),
+        ];
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('personel', function ($pq) use ($search) {
-                        $pq->where('nrp_nip', 'like', "%{$search}%");
-                    });
-            });
-        }
+        $marriageStats = [
+            'total' => $totalMarriage,
+            'pending' => $pendingMarriage,
+            'approved' => MarriageApplication::whereIn('status', ['DISETUJUI', 'SELESAI'])->count(),
+            'rejected' => MarriageApplication::where('status', 'DITOLAK')->count(),
+        ];
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $recentLeaveRequests = $query->paginate(10)->withQueryString();
+        // 3. AKTIVITAS TERBARU (General Activity)
+        $recentActivities = ActivityLog::with('user')
+            ->orderBy('created_at', 'desc')
+            ->take(6)
+            ->get();
 
         return view('admin.dashboard', compact(
             'totalPersonel',
-            'totalLeaveRequests',
-            'pendingLeaveRequests',
-            'approvedLeaveRequests',
-            'totalMarriageRequests',
-            'pendingMarriageRequests',
-            'recentLeaveRequests'
+            'totalPengajuan',
+            'totalPending',
+            'recentActivityCount',
+            'leaveStats',
+            'marriageStats',
+            'recentActivities'
         ));
     }
 }

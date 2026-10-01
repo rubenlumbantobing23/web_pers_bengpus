@@ -160,7 +160,7 @@
         background: rgba(0, 0, 0, 0.5); border-color: var(--primary);
         box-shadow: 0 0 0 4px rgba(5,150,105,0.15);
     }
-    .input-wrapper i.fa-envelope, .input-wrapper i.fa-lock {
+    .input-wrapper i.fa-envelope, .input-wrapper i.fa-lock, .input-wrapper i.fa-user {
         position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
         color: var(--text-muted); transition: color 0.3s ease; font-size: 1.1rem;
     }
@@ -229,7 +229,7 @@
         <div style="max-width: 440px; width: 100%; margin: 0 auto; padding: 40px 32px; background: rgba(10, 15, 28, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);" class="animate-fade-up delay-2">
             <div style="margin-bottom: 32px; text-align: center;">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; color: #ffffff; margin-bottom: 8px;">Masuk ke Akun Anda</h2>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">Silakan isi email dan kata sandi untuk melanjutkan.</p>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Silakan masukkan NRP/NIP dan kata sandi untuk melanjutkan.</p>
             </div>
 
         @if(session('success'))
@@ -249,10 +249,10 @@
         <form action="{{ route('login') }}" method="POST">
             @csrf
             <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label" for="email" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">Alamat Email</label>
+                <label class="form-label" for="login_id" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">NRP/NIP</label>
                 <div class="input-wrapper">
-                    <input type="email" id="email" name="email" placeholder="nama@bengpuskomlekad.mil.id" value="{{ old('email') }}" required autofocus>
-                    <i class="fa-solid fa-envelope"></i>
+                    <input type="text" id="login_id" name="login_id" placeholder="Masukkan NRP/NIP" value="{{ old('login_id') }}" required autofocus>
+                    <i class="fa-solid fa-user"></i>
                 </div>
             </div>
 

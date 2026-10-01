@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             LeaveTypeSeeder::class,
             HolidaySeeder::class,
             MarriageRequirementSeeder::class,
+            MarriageDocumentTypeSeeder::class,
+            LetterTypeSeeder::class,
         ]);
     }
 }

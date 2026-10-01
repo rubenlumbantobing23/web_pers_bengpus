@@ -7,11 +7,19 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+    /**
+ * Send the password reset notification.
+ */
+public function sendPasswordResetNotification($token): void
+{
+    $this->notify(new ResetPasswordNotification($token));
+}
 
     protected $hidden = [
         'password',
@@ -69,11 +77,6 @@ class User extends Authenticatable
     public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
-    }
-
-    public function marriageRequests()
-    {
-        return $this->hasMany(MarriageRequest::class);
     }
 
     public function marriageApplications()

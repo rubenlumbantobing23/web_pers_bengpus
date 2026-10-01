@@ -64,4 +64,20 @@ class AdminUserController extends Controller
     }
 
 
+    /**
+     * Aktifkan / Nonaktifkan akun pengguna
+     */
+    public function toggleStatus($id)
+    {
+        $user = User::where('role', 'user')->has('personel')->with('personel')->findOrFail($id);
+        
+        $personel = $user->personel;
+        $personel->status_aktif = !$personel->status_aktif;
+        $personel->save();
+
+        $statusText = $personel->status_aktif ? 'diaktifkan' : 'dinonaktifkan';
+        
+        return back()->with('success', "Akun untuk {$user->name} berhasil {$statusText}.");
+    }
+
 }

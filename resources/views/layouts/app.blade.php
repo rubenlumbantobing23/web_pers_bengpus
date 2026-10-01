@@ -14,6 +14,9 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         :root {
             --bg-dark: #0a0f1d;
@@ -312,6 +315,81 @@
                 
                 e.target.setSelectionRange(start, end);
             }
+        });
+
+        // Interactive Logout Confirmation
+        function confirmLogout(formId) {
+            Swal.fire({
+                title: 'Konfirmasi Keluar',
+                text: "Apakah Anda yakin ingin keluar dari aplikasi?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> Ya, Keluar',
+                cancelButtonText: 'Batal',
+                background: '#131b2e',
+                color: '#f8fafc',
+                customClass: {
+                    popup: 'glass-card'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            });
+        }
+
+        function showNotice(message, title = 'Perhatian') {
+            return Swal.fire({
+                title,
+                text: message,
+                icon: 'info',
+                confirmButtonColor: '#059669',
+                confirmButtonText: 'Mengerti',
+                background: '#131b2e',
+                color: '#f8fafc',
+                customClass: { popup: 'glass-card' }
+            });
+        }
+
+        // Replace browser-native confirmation popups with the app's interactive dialog.
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || !form.dataset.confirm) return;
+
+            if (form.dataset.confirmBypassed === 'true') {
+                delete form.dataset.confirmBypassed;
+                return;
+            }
+
+            event.preventDefault();
+            const submitter = event.submitter;
+            const message = form.dataset.confirm;
+            const title = form.dataset.confirmTitle || 'Konfirmasi tindakan';
+            const confirmText = form.dataset.confirmButton || 'Ya, lanjutkan';
+
+            Swal.fire({
+                title,
+                text: message,
+                icon: form.dataset.confirmIcon || 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: confirmText,
+                cancelButtonText: 'Batal',
+                background: '#131b2e',
+                color: '#f8fafc',
+                customClass: { popup: 'glass-card' }
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+                form.dataset.confirmBypassed = 'true';
+                if (submitter && submitter.form === form) {
+                    form.requestSubmit(submitter);
+                } else {
+                    form.requestSubmit();
+                }
+            });
         });
     </script>
     @stack('scripts')

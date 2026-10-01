@@ -249,13 +249,7 @@
                             <td><strong style="color:var(--accent-gold);">{{ $p->nrp_nip }}</strong></td>
                             <td>{{ $p->jabatan ?? '-' }}</td>
                             <td>{{ $p->tmt_jabatan ?? '-' }}</td>
-                            <td>
-                                @if($p->organizationUnit)
-                                    <span class="badge bg-info">{{ $p->organizationUnit->name }}</span>
-                                @else
-                                    {{ $p->satuan_bagian ?? '-' }}
-                                @endif
-                            </td>
+                            <td>{{ $p->satuan_bagian ?? '-' }}</td>
                             <td>{!! nl2br(e($p->tmt_tni_pa ?? '-')) !!}</td>
                             <td>{!! nl2br(e($p->agama_suku ?: '-')) !!}</td>
                             <td>{{ $p->tgl_lahir ? \Carbon\Carbon::parse($p->tgl_lahir)->format('d/m/Y') : '-' }}</td>

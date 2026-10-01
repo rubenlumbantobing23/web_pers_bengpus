@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\LeaveRequest;
 use App\Models\LeaveType;
 use App\Models\LeaveOfficialLetter;
+use App\Notifications\LeaveStatusNotification;
 
 class AdminLeaveController extends Controller
 {
@@ -56,6 +57,7 @@ class AdminLeaveController extends Controller
             'rejection_reason' => 'required_if:status,rejected|nullable|string|max:1000',
             'approved_days' => 'nullable|integer|min:1',
             'approved_notes' => 'nullable|string|max:500',
+            'signing_option' => 'nullable|in:kabeng,waka_an_kabeng,wakabeng',
         ], [
             'rejection_reason.required_if' => 'Alasan penolakan wajib diisi jika pengajuan ditolak.',
             'approved_days.min' => 'Jumlah hari yang disetujui minimal 1 hari.',
@@ -84,11 +86,33 @@ class AdminLeaveController extends Controller
 
         $leaveRequest->update($updateData);
 
-        $statusLabel = $request->status === 'approved'
+// Kirim notifikasi kepada anggota pemilik pengajuan cuti
+if ($leaveRequest->user) {
+    $leaveRequest->user->notify(
+        new LeaveStatusNotification(
+            $leaveRequest->load('leaveType'),
+            $request->status
+        )
+    );
+}
+
+$statusLabel = $request->status === 'approved'
             ? 'disetujui'
             : ($request->status === 'rejected' ? 'ditolak' : 'dibatalkan');
 
         \App\Helpers\ActivityLogger::log('Update Status Cuti', "Mengubah status cuti ({$leaveRequest->request_number}) menjadi {$statusLabel}");
+
+        if ($request->status === 'approved') {
+            try {
+                $this->generateSuratCuti($leaveRequest->id, $request->signing_option);
+                return redirect()->route('admin.leave.show', $id)
+                    ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} berhasil diperbarui menjadi disetujui dan Surat Cuti otomatis diterbitkan.");
+            } catch (\Exception $e) {
+                return redirect()->route('admin.leave.show', $id)
+                    ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} disetujui.")
+                    ->with('error', "Namun gagal menerbitkan surat otomatis: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.leave.show', $id)
             ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} berhasil diperbarui menjadi {$statusLabel}.");
@@ -96,27 +120,44 @@ class AdminLeaveController extends Controller
 
     public function issueSuratCuti(Request $request, $id)
     {
+        try {
+            $this->generateSuratCuti($id, $request->signing_option);
+            return redirect()->route('admin.leave.show', $id)
+                ->with('success', 'Surat Cuti Resmi berhasil diterbitkan.');
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    private function generateSuratCuti($id, $signingOption = null)
+    {
         $leaveRequest = LeaveRequest::with(['user.personel', 'leaveType'])->findOrFail($id);
         
         if ($leaveRequest->status !== 'approved') {
-            return back()->with('error', 'Surat Cuti Resmi belum dapat diterbitkan karena pengajuan belum disetujui.');
+            throw new \Exception('Surat Cuti Resmi belum dapat diterbitkan karena pengajuan belum disetujui.');
         }
         
         // Prevent duplicate generation (just in case UI bugs out)
         $existingLetter = LeaveOfficialLetter::where('leave_request_id', $id)->first();
         if ($existingLetter) {
-            return back()->with('error', 'Surat Cuti Resmi sudah diterbitkan sebelumnya.');
+            return true;
         }
 
         $user = $leaveRequest->user;
         $personel = $user->personel;
         
         $kategori = $personel ? $personel->kategori_personel : '';
-        if (in_array($kategori, ['Perwira Menengah', 'Perwira Pertama'])) {
-            $request->validate([
-                'signing_option' => 'required|in:kabeng,waka_an_kabeng'
-            ]);
-            $signingOption = $request->signing_option;
+        $isPejabat = false;
+        if ($personel) {
+            $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+                ->where('is_active', true)
+                ->exists();
+        }
+
+        if ($isPejabat || in_array($kategori, ['Perwira Menengah', 'Perwira Pertama'])) {
+            if (!$signingOption) {
+                throw new \Exception('Opsi penandatangan wajib diisi untuk perwira atau pejabat.');
+            }
             $templateType = 'surat_cuti_perwira';
             $signerRole = $signingOption === 'kabeng' ? 'kabeng' : 'wakabeng';
         } elseif (in_array($kategori, ['Bintara', 'Tamtama'])) {
@@ -135,7 +176,7 @@ class AdminLeaveController extends Controller
 
         $templatePath = storage_path('app/templates/template_' . $templateType . '.docx');
         if (!file_exists($templatePath)) {
-            return back()->with('error', 'Template Surat Cuti untuk kategori ini belum dikonfigurasi. Silakan konfigurasi template terlebih dahulu.');
+            throw new \Exception('Template Surat Cuti untuk kategori ini belum dikonfigurasi. Silakan konfigurasi template terlebih dahulu.');
         }
 
         // Get signer info from OrganizationStructureService
@@ -143,7 +184,7 @@ class AdminLeaveController extends Controller
         $signerPersonel = $structureService->getSignerPersonel($signerRole);
         
         if (!$signerPersonel) {
-            return back()->with('error', 'Pejabat penandatangan (' . strtoupper($signerRole) . ') belum dikonfigurasi pada menu Struktur Organisasi. Surat belum dapat diterbitkan.');
+            throw new \Exception('Pejabat penandatangan (' . strtoupper($signerRole) . ') belum dikonfigurasi pada menu Struktur Organisasi. Surat belum dapat diterbitkan.');
         }
 
         $nama_pemohon = $personel ? $personel->nama : $user->name;
@@ -263,7 +304,7 @@ class AdminLeaveController extends Controller
         $templateProcessor->saveAs($tempFile);
         
         Storage::disk('public')->put($savePath, file_get_contents($tempFile));
-        unlink($tempFile);
+        @unlink($tempFile);
 
         LeaveOfficialLetter::create([
             'leave_request_id' => $leaveRequest->id,
@@ -276,8 +317,7 @@ class AdminLeaveController extends Controller
 
         \App\Helpers\ActivityLogger::log('Terbit Surat Cuti', "Menerbitkan Surat Cuti Resmi untuk {$nama_pemohon}");
 
-        return redirect()->route('admin.leave.show', $id)
-            ->with('success', 'Surat Cuti Resmi berhasil diterbitkan.');
+        return true;
     }
 
     public function downloadSuratCuti($id)

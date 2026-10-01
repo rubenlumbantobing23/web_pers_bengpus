@@ -6,158 +6,157 @@
 <div style="display: flex; flex-direction: column; gap: 24px;">
 
     <!-- Welcome Card -->
-    <div class="glass-card" style="background: linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(19, 27, 46, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3); padding: 28px;">
+    <div class="glass-card" style="background: linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(19, 27, 46, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3); padding: 24px;">
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
             <div>
-                <span style="font-size: 0.85rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Sistem Informasi Personalia</span>
-                <h1 style="font-size: 1.8rem; color: #fff; margin: 4px 0 8px 0;">Selamat Datang, {{ $user->name }}</h1>
-                <p style="color: var(--text-sub); font-size: 0.95rem;">
+                <span style="font-size: 0.85rem; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Beranda Sistem Informasi Personalia</span>
+                <h1 style="font-size: 1.6rem; color: #fff; margin: 4px 0 8px 0;">Selamat Datang, {{ $user->name }}</h1>
+                <p style="color: var(--text-sub); font-size: 0.95rem; margin: 0;">
                     NRP/NIP: <strong style="color: #fff;">{{ $user->personel->nrp_nip ?? '-' }}</strong> | Pangkat: <strong style="color: #fff;">{{ $user->personel->pangkat_golongan ?? '-' }}</strong> | Jabatan: <strong style="color: #fff;">{{ $user->personel->jabatan ?? '-' }}</strong>
                 </p>
             </div>
-            <div style="display: flex; gap: 12px;">
-                <a href="{{ route('user.leave.create') }}" class="btn-military">
-                    <i class="fa-solid fa-plus"></i> Ajukan Cuti
-                </a>
-                <a href="{{ route('user.marriage.create') }}" class="btn-secondary" style="background: rgba(217, 119, 6, 0.2); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
-                    <i class="fa-solid fa-heart"></i> Ajukan Nikah
-                </a>
-            </div>
         </div>
     </div>
 
-    <!-- Visual Kartu Jatah Cuti Tahunan (Section 9 Requirement) -->
+    <!-- Layanan Personalia Section -->
     <div>
         <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
-            <i class="fa-solid fa-chart-pie" style="color: var(--primary);"></i> STATISTIK JATAH CUTI TAHUNAN ({{ date('Y') }})
+            <i class="fa-solid fa-layer-group" style="color: var(--primary);"></i> LAYANAN PERSONALIA
         </h3>
-        
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
-            <!-- Card 1: Jatah Awal -->
-            <div class="glass-card" style="position: relative; overflow: hidden;">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(255, 255, 255, 0.03);">
-                    <i class="fa-solid fa-calendar-days"></i>
-                </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">CUTI TAHUNAN</div>
-                <div style="font-size: 2.4rem; font-weight: 800; color: #fff; margin: 12px 0 4px 0;">{{ $entitlement['total'] }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-muted);">Hari</span></div>
-                <div style="font-size: 0.85rem; color: var(--text-sub);">Jatah resmi per tahun kerja</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; border-color: rgba(16, 185, 129, 0.2);">
+                <div style="font-size: 1.5rem; color: var(--primary);"><i class="fa-solid fa-umbrella-beach"></i></div>
+                <h4 style="color: #fff; font-size: 1.1rem; margin: 0;">Pengajuan Cuti</h4>
+                <p style="color: var(--text-sub); font-size: 0.85rem; margin: 0; flex-grow: 1;">Ajukan dan kelola permohonan cuti tahunan, sakit, atau alasan penting.</p>
+                <a href="{{ route('user.leave.create') }}" class="btn-primary" style="text-align: center; font-size: 0.9rem; padding: 8px;">Ajukan Cuti</a>
+            </div>
+            
+            <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; border-color: rgba(217, 119, 6, 0.2);">
+                <div style="font-size: 1.5rem; color: var(--accent-gold);"><i class="fa-solid fa-heart"></i></div>
+                <h4 style="color: #fff; font-size: 1.1rem; margin: 0;">Pengajuan Nikah</h4>
+                <p style="color: var(--text-sub); font-size: 0.85rem; margin: 0; flex-grow: 1;">Ajukan dan pantau proses izin nikah secara terpusat.</p>
+                <a href="{{ route('user.pengajuan_nikah.create') }}" class="btn-secondary" style="text-align: center; font-size: 0.9rem; padding: 8px; background: rgba(217, 119, 6, 0.1); border-color: rgba(245, 158, 11, 0.3); color: #fbbf24;">Ajukan Nikah</a>
             </div>
 
-            <!-- Card 2: Cuti Digunakan -->
-            <div class="glass-card" style="position: relative; overflow: hidden; border-color: rgba(59, 130, 246, 0.3);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(59, 130, 246, 0.05);">
-                    <i class="fa-solid fa-user-check"></i>
-                </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.05em;">TELAH DIGUNAKAN</div>
-                <div style="font-size: 2.4rem; font-weight: 800; color: #93c5fd; margin: 12px 0 4px 0;">{{ $entitlement['used'] }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-muted);">Hari</span></div>
-                <div style="font-size: 0.85rem; color: var(--text-sub);">Total cuti yang disetujui</div>
-            </div>
-
-            <!-- Card 3: Sedang Diajukan -->
-            <div class="glass-card" style="position: relative; overflow: hidden; border-color: rgba(245, 158, 11, 0.3);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(245, 158, 11, 0.05);">
-                    <i class="fa-solid fa-hourglass-half"></i>
-                </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em;">SEDANG DIAJUKAN</div>
-                <div style="font-size: 2.4rem; font-weight: 800; color: #fde047; margin: 12px 0 4px 0;">{{ $entitlement['pending'] }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-muted);">Hari</span></div>
-                <div style="font-size: 0.85rem; color: var(--text-sub);">Menunggu verifikasi admin</div>
-            </div>
-
-            <!-- Card 4: Sisa Cuti Tersedia -->
-            <div class="glass-card" style="position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--glass-bg) 100%); border-color: rgba(16, 185, 129, 0.4);">
-                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(16, 185, 129, 0.08);">
-                    <i class="fa-solid fa-shield-heart"></i>
-                </div>
-                <div style="font-size: 0.8rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em;">SISA CUTI TERSEDIA</div>
-                <div style="font-size: 2.4rem; font-weight: 800; color: #6ee7b7; margin: 12px 0 4px 0;">{{ $entitlement['available_after_pending'] }} <span style="font-size: 1rem; font-weight: 500; color: var(--text-muted);">Hari</span></div>
-                <div style="font-size: 0.85rem; color: var(--text-sub);">Dapat diajukan kembali</div>
+            <div class="glass-card" style="padding: 20px; display: flex; flex-direction: column; gap: 12px; border-color: rgba(59, 130, 246, 0.2);">
+                <div style="font-size: 1.5rem; color: #60a5fa;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <h4 style="color: #fff; font-size: 1.1rem; margin: 0;">Riwayat Pengajuan</h4>
+                <p style="color: var(--text-sub); font-size: 0.85rem; margin: 0; flex-grow: 1;">Lihat seluruh riwayat pengajuan personalia Anda.</p>
+                <a href="{{ route('user.leave.index') }}" class="btn-secondary" style="text-align: center; font-size: 0.9rem; padding: 8px; border-color: rgba(59, 130, 246, 0.3); color: #93c5fd;">Lihat Riwayat</a>
             </div>
         </div>
     </div>
 
-    <!-- Main Grid: Recent Submissions & Shortcuts -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-
-        <!-- Left Column: Recent Leave Requests -->
-        <div class="glass-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                <h3 style="font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-clock-history" style="color: var(--primary);"></i> Pengajuan Cuti Terbaru
-                </h3>
-                <a href="{{ route('user.leave.index') }}" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">Lihat Semua &rarr;</a>
+    <!-- General Stats -->
+    <div>
+        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> RINGKASAN AKTIVITAS
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+            <div class="glass-card" style="position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(255, 255, 255, 0.03);">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Total Pengajuan</div>
+                <div style="font-size: 2.4rem; font-weight: 800; color: #fff; margin: 12px 0 4px 0;">{{ $totalRequests }}</div>
             </div>
 
-            @if($recentLeaveRequests->isEmpty())
+            <div class="glass-card" style="position: relative; overflow: hidden; border-color: rgba(245, 158, 11, 0.3);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(245, 158, 11, 0.05);">
+                    <i class="fa-solid fa-spinner"></i>
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em;">Sedang Diproses</div>
+                <div style="font-size: 2.4rem; font-weight: 800; color: #fde047; margin: 12px 0 4px 0;">{{ $totalActive }}</div>
+            </div>
+
+            <div class="glass-card" style="position: relative; overflow: hidden; border-color: rgba(16, 185, 129, 0.4);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(16, 185, 129, 0.08);">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #34d399; text-transform: uppercase; letter-spacing: 0.05em;">Disetujui</div>
+                <div style="font-size: 2.4rem; font-weight: 800; color: #6ee7b7; margin: 12px 0 4px 0;">{{ $approvedRequests }}</div>
+            </div>
+
+            <div class="glass-card" style="position: relative; overflow: hidden; border-color: rgba(239, 68, 68, 0.3);">
+                <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(239, 68, 68, 0.05);">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #f87171; text-transform: uppercase; letter-spacing: 0.05em;">Notifikasi Baru</div>
+                <div style="font-size: 2.4rem; font-weight: 800; color: #fca5a5; margin: 12px 0 4px 0;">{{ $unreadNotifications }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid: Recent Activities & Info Panel -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+
+        <!-- Left Column: Aktivitas Terbaru -->
+        <div class="glass-card">
+            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Aktivitas Terbaru
+            </h3>
+
+            @if($activities->isEmpty())
                 <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
-                    <i class="fa-solid fa-folder-open" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4;"></i>
-                    <p>Belum ada pengajuan cuti yang dikirim.</p>
+                    <i class="fa-solid fa-inbox" style="font-size: 2.5rem; margin-bottom: 12px; opacity: 0.4;"></i>
+                    <p>Belum ada aktivitas tercatat.</p>
                 </div>
             @else
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>No. Pengajuan</th>
-                                <th>Jenis</th>
-                                <th>Tanggal Cuti</th>
-                                <th>Hari Kerja</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recentLeaveRequests as $req)
-                                <tr>
-                                    <td style="font-weight: 600; color: #fff;">{{ $req->request_number }}</td>
-                                    <td>{{ $req->leaveType->name }}</td>
-                                    <td>{{ $req->start_date->format('d M Y') }} - {{ $req->end_date->format('d M Y') }}</td>
-                                    <td><strong style="color: #34d399;">{{ $req->status === 'approved' ? ($req->approved_days ?? $req->working_days_count) : $req->working_days_count }} Hari</strong></td>
-                                    <td>
-                                        @if($req->status === 'pending')
-                                            <span class="badge badge-pending">PENDING</span>
-                                        @elseif($req->status === 'approved')
-                                            <span class="badge badge-approved">DISETUJUI</span>
-                                        @elseif($req->status === 'rejected')
-                                            <span class="badge badge-rejected">DITOLAK</span>
-                                        @else
-                                            <span class="badge badge-cancelled">DIBATALKAN</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('user.leave.show', $req->id) }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">
-                                            Detail
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    @foreach($activities as $activity)
+                        <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border-left: 3px solid var(--primary);">
+                            <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                                @if($activity['type'] == 'Cuti')
+                                    <i class="fa-solid fa-umbrella-beach"></i>
+                                @else
+                                    <i class="fa-solid fa-heart"></i>
+                                @endif
+                            </div>
+                            <div style="flex-grow: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <h5 style="color: #fff; font-size: 0.95rem; margin: 0;">{{ $activity['title'] }}</h5>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ \Carbon\Carbon::parse($activity['date'])->diffForHumans() }}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 12px; font-size: 0.85rem;">
+                                    @if($activity['status'] === 'pending')
+                                        <span style="color: #fbbf24;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px;"></i> Sedang Diproses</span>
+                                    @elseif($activity['status'] === 'approved')
+                                        <span style="color: #34d399;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px;"></i> Disetujui</span>
+                                    @elseif($activity['status'] === 'rejected')
+                                        <span style="color: #f87171;"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px;"></i> Ditolak</span>
+                                    @else
+                                        <span style="color: var(--text-muted);"><i class="fa-solid fa-circle" style="font-size: 0.5rem; margin-right: 4px;"></i> Dibatalkan</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <a href="{{ $activity['url'] }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">
+                                Detail
+                            </a>
+                        </div>
+                    @endforeach
                 </div>
             @endif
         </div>
 
-        <!-- Right Column: Shortcuts & Quick Info -->
+        <!-- Right Column: Informasi Personalia -->
         <div style="display: flex; flex-direction: column; gap: 20px;">
-            <!-- Shortcut Menu -->
+            
             <div class="glass-card">
-                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 16px;">Shortcut Pintar</h4>
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <a href="{{ route('user.leave.create') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fa-solid fa-plus-circle" style="color: var(--primary); margin-right: 8px;"></i> Ajukan Cuti Baru</span>
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                    </a>
-                    <a href="{{ route('user.marriage.create') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fa-solid fa-heart" style="color: var(--accent-gold); margin-right: 8px;"></i> Ajukan Izin Nikah</span>
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                    </a>
-                    <a href="{{ route('user.leave.index') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fa-solid fa-list-check" style="color: #60a5fa; margin-right: 8px;"></i> Riwayat Pengajuan</span>
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                    </a>
-                    <a href="{{ route('user.profile') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between;">
-                        <span><i class="fa-solid fa-user-gear" style="color: #a78bfa; margin-right: 8px;"></i> Kelola Profil</span>
-                        <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                    </a>
+                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-circle-info" style="color: #60a5fa;"></i> Informasi Personalia
+                </h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- Sisa Cuti -->
+                    <div style="padding: 16px; background: rgba(59, 130, 246, 0.05); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <div style="font-size: 0.8rem; color: var(--text-sub); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Sisa Cuti Tahunan</div>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ $entitlement['available_after_pending'] }}</span>
+                            <span style="font-size: 0.9rem; color: var(--text-muted);">Hari</span>
+                        </div>
+                        <a href="{{ route('user.leave.index') }}" style="font-size: 0.8rem; color: #60a5fa; text-decoration: none; margin-top: 8px; display: inline-block;">Lihat Detail &rarr;</a>
+                    </div>
                 </div>
             </div>
 
@@ -168,7 +167,7 @@
                 </h4>
                 <div style="display: flex; flex-direction: column; gap: 12px; max-height: 250px; overflow-y: auto;">
                     @foreach($holidays->take(4) as $h)
-                        <div style="padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border-left: 3px solid var(--primary);">
+                        <div style="padding: 10px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border-left: 3px solid var(--accent-gold);">
                             <div style="font-size: 0.85rem; font-weight: 700; color: #fff;">{{ $h->name }}</div>
                             <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
                                 <i class="fa-regular fa-clock"></i> {{ \Carbon\Carbon::parse($h->date)->format('d F Y') }}
@@ -177,6 +176,7 @@
                     @endforeach
                 </div>
             </div>
+            
         </div>
 
     </div>

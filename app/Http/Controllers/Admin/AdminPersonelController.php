@@ -133,7 +133,7 @@ class AdminPersonelController extends Controller
     // ════════════════════════════════════════
     public function show($id)
     {
-        $personel = Personel::with(['user.leaveRequests.leaveType', 'user.marriageRequests'])
+        $personel = Personel::with(['user.leaveRequests.leaveType'])
             ->findOrFail($id);
 
         return view('admin.personel.show', compact('personel'));
@@ -173,10 +173,21 @@ class AdminPersonelController extends Controller
             'status_pernikahan'=> 'nullable|string|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
         ]);
 
-        $personel->update(array_merge(
+        $dataToUpdate = array_merge(
             ['status_aktif' => $request->boolean('status_aktif')],
             $this->mapRequestToFields($request)
-        ));
+        );
+
+        $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+            ->where('is_active', true)
+            ->exists();
+
+        // Prevent overwriting unit ID to null if field is hidden for Pejabat
+        if ($isPejabat && !$request->has('organization_unit_id')) {
+            unset($dataToUpdate['organization_unit_id']);
+        }
+
+        $personel->update($dataToUpdate);
 
         if ($personel->user) {
             $personel->user->update(['name' => $request->nama]);

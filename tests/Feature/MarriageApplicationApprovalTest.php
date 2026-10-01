@@ -12,6 +12,7 @@ use App\Models\MarriagePartner;
 use App\Models\MarriageDocumentType;
 use App\Models\MarriageDocument;
 use App\Models\MarriageLetter;
+use App\Services\MarriageApplicationLetterService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
@@ -71,10 +72,10 @@ class MarriageApplicationApprovalTest extends TestCase
             'category' => 'SURAT_FINAL',
             'owner_type' => 'ANGGOTA',
             'source_type' => 'SYSTEM',
-            'template_path' => 'templates/marriage/dummy_surat_izin_nikah_final.docx',
+            'template_path' => 'templates/marriage/Surat izin nikah.docx',
             'is_active' => true,
         ]);
-        
+
         $this->application = MarriageApplication::create([
             'user_id' => $this->normalUser->id,
             'personel_id' => $this->personel->id,
@@ -154,21 +155,30 @@ class MarriageApplicationApprovalTest extends TestCase
         $response->assertSessionMissing('Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui Admin.');
     }
 
-    // 4. Admin tidak dapat approve initial application jika signed-return belum ada.
-    public function test_admin_cannot_approve_initial_if_signed_return_missing()
+    // 4. Status verifikasi dokumen tidak bisa diubah manual lewat form status.
+    public function test_admin_cannot_manually_set_document_review_status()
     {
         $response = $this->actingAs($this->adminUser)->post(route('admin.admin.pengajuan_nikah.update_status', $this->application->id), [
             'status' => MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
         ]);
-        $response->assertSessionHas('error', 'Surat Pengajuan Nikah (signed-return) belum diunggah atau belum diverifikasi/diterima.');
+        $response->assertSessionHasErrors('status');
         $this->application->refresh();
         $this->assertEquals(MarriageApplication::STATUS_DIAJUKAN, $this->application->status);
     }
 
-    // 5. Admin dapat approve initial application jika signed-return tersedia.
-    public function test_admin_can_approve_initial_if_signed_return_available()
+    // 5. Penerimaan Tahap 1 otomatis memajukan status; seluruh berkas diterima otomatis memajukan ke DIVERIFIKASI.
+    public function test_document_review_automatically_updates_application_status()
     {
-        MarriageDocument::create([
+        $requiredIdentityDocument = MarriageDocumentType::create([
+            'code' => 'KTP_ANGGOTA',
+            'name' => 'KTP Anggota',
+            'category' => 'IDENTITAS',
+            'owner_type' => 'ANGGOTA',
+            'source_type' => 'UPLOAD',
+            'is_active' => true,
+        ]);
+
+        $spnDocument = MarriageDocument::create([
             'marriage_application_id' => $this->application->id,
             'marriage_document_type_id' => $this->docTypeSPN->id,
             'pihak' => 'Anggota',
@@ -178,16 +188,68 @@ class MarriageApplicationApprovalTest extends TestCase
             'file_name' => 'test.pdf',
             'mime_type' => 'application/pdf',
             'file_size' => 1024,
-            'status_verifikasi' => 'DITERIMA'
+            'status_verifikasi' => 'BELUM_DIPERIKSA'
         ]);
 
-        $response = $this->actingAs($this->adminUser)->post(route('admin.admin.pengajuan_nikah.update_status', $this->application->id), [
-            'status' => MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+        $this->actingAs($this->adminUser)->post(route('admin.admin.pengajuan_nikah.verify_document', $this->application->id), [
+            'document_id' => $spnDocument->id,
+            'status' => 'DITERIMA',
         ]);
-
-        $response->assertSessionHas('success');
         $this->application->refresh();
         $this->assertEquals(MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, $this->application->status);
+
+        $requiredDocument = MarriageDocument::create([
+            'marriage_application_id' => $this->application->id,
+            'marriage_document_type_id' => $requiredIdentityDocument->id,
+            'pihak' => 'Anggota',
+            'jenis_dokumen' => $requiredIdentityDocument->name,
+            'nama_dokumen' => $requiredIdentityDocument->name,
+            'file_path' => 'ktp.pdf',
+            'file_name' => 'ktp.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size' => 1024,
+            'status_verifikasi' => 'BELUM_DIPERIKSA',
+        ]);
+
+        $this->actingAs($this->adminUser)->post(route('admin.admin.pengajuan_nikah.verify_document', $this->application->id), [
+            'document_id' => $requiredDocument->id,
+            'status' => 'DITERIMA',
+        ]);
+        $this->application->refresh();
+        $this->assertEquals(MarriageApplication::STATUS_DIVERIFIKASI, $this->application->status);
+    }
+
+    public function test_automatic_letter_generation_is_idempotent()
+    {
+        $this->docTypeSPN->update(['template_path' => 'templates/marriage/Surat pengajuan menikah.docx']);
+        $service = app(MarriageApplicationLetterService::class);
+        $application = $this->application->fresh(['personel', 'partner']);
+
+        $service->ensureGenerated($application, [MarriageApplicationLetterService::INITIAL_CODE], $this->adminUser->id);
+        $service->ensureGenerated($application, [MarriageApplicationLetterService::INITIAL_CODE], $this->adminUser->id);
+
+        $letter = MarriageLetter::where('marriage_application_id', $application->id)
+            ->where('jenis_surat', MarriageApplicationLetterService::INITIAL_CODE)
+            ->firstOrFail();
+
+        $this->assertSame(1, MarriageLetter::where('marriage_application_id', $application->id)
+            ->where('jenis_surat', MarriageApplicationLetterService::INITIAL_CODE)
+            ->count());
+        Storage::disk('private')->assertExists($letter->file_generated);
+    }
+
+    public function test_user_application_page_generates_initial_letter_automatically()
+    {
+        $this->docTypeSPN->update(['template_path' => 'templates/marriage/Surat pengajuan menikah.docx']);
+
+        $response = $this->actingAs($this->normalUser)->get(route('user.pengajuan_nikah.show', $this->application->id));
+
+        $response->assertOk();
+        $this->assertDatabaseHas('marriage_letters', [
+            'marriage_application_id' => $this->application->id,
+            'jenis_surat' => MarriageApplicationLetterService::INITIAL_CODE,
+            'status' => 'TERSEDIA',
+        ]);
     }
 
     // 6. Upload signed-return tidak otomatis mengubah application status.
@@ -225,11 +287,39 @@ class MarriageApplicationApprovalTest extends TestCase
     {
         $this->application->update(['status' => MarriageApplication::STATUS_DITOLAK]);
 
+        // Harus upload Surat Permohonan terlebih dahulu sebelum submit
+        $file = UploadedFile::fake()->create('signed.pdf', 100, 'application/pdf');
+        $res = $this->actingAs($this->normalUser)->post(route('user.pengajuan_nikah.upload_document', $this->application->id), [
+            'pihak' => 'Anggota',
+            'marriage_document_type_id' => $this->docTypeSPN->id,
+            'jenis_dokumen' => 'Surat Pengajuan Nikah',
+            'file' => $file
+        ]);
+
+        if (session('error')) dump(session('error'));
+        $res->assertSessionHas('success');
+
         $response = $this->actingAs($this->normalUser)->post(route('user.pengajuan_nikah.submit', $this->application->id));
+        if (session('error')) dump(session('error'));
 
         $response->assertRedirect();
         $this->application->refresh();
         $this->assertEquals(MarriageApplication::STATUS_DIAJUKAN, $this->application->status);
+    }
+
+    // 8b. User tidak dapat submit jika belum upload Surat Permohonan
+    public function test_user_cannot_submit_without_surat_permohonan()
+    {
+        $this->application->update(['status' => MarriageApplication::STATUS_DRAFT]);
+
+        // Hapus semua dokumen (pastikan kosong)
+        $this->application->documents()->delete();
+
+        $response = $this->actingAs($this->normalUser)->post(route('user.pengajuan_nikah.submit', $this->application->id));
+
+        $response->assertSessionHas('error');
+        $this->application->refresh();
+        $this->assertEquals(MarriageApplication::STATUS_DRAFT, $this->application->status);
     }
 
     // 9. Generated Surat Pengajuan Nikah tidak hilang ketika signed-return diupload.
@@ -389,4 +479,3 @@ class MarriageApplicationApprovalTest extends TestCase
         $response->assertStatus(404);
     }
 }
-

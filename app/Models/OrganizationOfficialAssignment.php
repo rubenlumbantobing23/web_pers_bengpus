@@ -58,8 +58,8 @@ class OrganizationOfficialAssignment extends Model
             'kabengintegrasi dan power system' => 'Kabengintegrasi & Power System',
             'kasub' => 'Kasub / Kasubbeng',
             'kagud' => 'Kagud',
-            'kaprim' => 'Kaprim',
-            'kepala_unit' => 'Kepala Unit',
+            'kaur' => 'Kaur',
+            'paur' => 'Paur',
             'plh' => 'PLH',
             'pejabat_lain' => 'Pejabat Lain',
         ];

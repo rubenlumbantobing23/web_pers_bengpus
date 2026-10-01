@@ -31,27 +31,44 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $request->validate([
+            'login_id' => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $loginInput = $request->input('login_id');
+        $password = $request->input('password');
+        $remember = $request->boolean('remember');
+        $userToLogin = null;
+
+        // 1. Cari personels berdasarkan nrp_nip
+        $personel = Personel::where('nrp_nip', $loginInput)->first();
+        if ($personel && $personel->user_id) {
+            $user = User::find($personel->user_id);
+            if ($user && Hash::check($password, $user->password)) {
+                if (!$personel->status_aktif) {
+                    return back()->withErrors(['login_id' => 'Akun Personel Anda telah dinonaktifkan. Hubungi Admin.'])->onlyInput('login_id');
+                }
+                $userToLogin = $user;
+            }
+        }
+
+        if ($userToLogin) {
+            Auth::login($userToLogin, $remember);
             $request->session()->regenerate();
 
-            $user = Auth::user();
             \App\Helpers\ActivityLogger::log('Login', 'Berhasil login ke dalam sistem.');
 
-            if ($user->isAdmin()) {
-                return redirect()->intended(route('admin.dashboard'))->with('success', 'Selamat datang di Dashboard Admin Personalia.');
+            if ($userToLogin->isAdmin()) {
+                return redirect()->route('admin.dashboard')->with('success', 'Selamat datang di Dashboard Admin Personalia.');
             }
 
-            return redirect()->intended(route('user.dashboard'))->with('success', 'Selamat datang kembali, ' . $user->name);
+            return redirect()->route('user.dashboard')->with('success', 'Selamat datang kembali, ' . $userToLogin->name);
         }
 
         return back()->withErrors([
-            'email' => 'Kredensial yang Anda masukkan tidak cocok dengan data kami.',
-        ])->onlyInput('email');
+            'login_id' => 'Kredensial yang Anda masukkan tidak cocok dengan data kami.',
+        ])->onlyInput('login_id');
     }
 
     public function showRegisterForm()
@@ -82,7 +99,14 @@ class AuthController extends Controller
         if (!$personel) {
             return response()->json([
                 'found' => false,
-                'message' => 'Data NRP/NIP tidak ditemukan dalam data nominatif personel. Silakan hubungi staf personalia.',
+                'message' => 'NRP/NIP belum terdaftar pada Nominatif Personel.',
+            ]);
+        }
+
+        if (!$personel->status_aktif) {
+            return response()->json([
+                'found' => false,
+                'message' => 'Personel tidak berstatus aktif dan tidak dapat melakukan registrasi.',
             ]);
         }
 
@@ -90,9 +114,13 @@ class AuthController extends Controller
             return response()->json([
                 'found' => false,
                 'has_account' => true,
-                'message' => 'Personel ini sudah memiliki akun terdaftar. Silakan gunakan akun yang sudah terdaftar atau hubungi staf personalia jika mengalami kendala.',
+                'message' => 'NRP/NIP tersebut sudah memiliki akun.',
             ]);
         }
+
+        $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+            ->where('is_active', true)
+            ->exists();
 
         return response()->json([
             'found' => true,
@@ -104,36 +132,64 @@ class AuthController extends Controller
                 'satuan_bagian' => $personel->satuan_bagian ?? 'Bengpuskomlekad',
                 'no_hp' => $personel->no_hp,
                 'organization_unit_id' => $personel->organization_unit_id,
+                'is_pejabat' => $isPejabat,
             ],
         ]);
     }
 
     public function register(Request $request)
     {
-        $request->validate([
-            'nrp_nip' => ['required', 'string', 'max:50'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
-            'no_hp' => ['nullable', 'string', 'max:50'],
-            'organization_unit_id' => ['nullable', 'exists:organization_units,id'],
-        ]);
-
         $nrpNipClean = trim($request->nrp_nip);
         $personel = Personel::where('nrp_nip', $nrpNipClean)->first();
 
         if (!$personel) {
             return back()->withInput()->withErrors([
-                'nrp_nip' => 'Data NRP/NIP tidak ditemukan dalam data nominatif personel. Silakan hubungi staf personalia.',
+                'nrp_nip' => 'NRP/NIP belum terdaftar pada Nominatif Personel.',
+            ]);
+        }
+
+        if (!$personel->status_aktif) {
+            return back()->withInput()->withErrors([
+                'nrp_nip' => 'Personel tidak berstatus aktif dan tidak dapat melakukan registrasi.',
             ]);
         }
 
         if ($personel->user_id !== null) {
             return back()->withInput()->withErrors([
-                'nrp_nip' => 'Personel ini sudah memiliki akun terdaftar. Silakan gunakan akun yang sudah terdaftar atau hubungi staf personalia jika mengalami kendala.',
+                'nrp_nip' => 'NRP/NIP tersebut sudah memiliki akun.',
             ]);
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($personel, $request) {
+        $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+            ->where('is_active', true)
+            ->exists();
+
+        $rules = [
+            'nrp_nip' => ['required', 'string', 'max:50'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'no_hp' => ['required', 'string', 'max:50'],
+        ];
+
+        if (!$isPejabat) {
+            $rules['organization_unit_id'] = ['required', 'exists:organization_units,id'];
+        }
+
+        $request->validate($rules);
+
+        if (!$isPejabat) {
+            $validUnit = \App\Models\OrganizationOfficialAssignment::where('organization_unit_id', $request->organization_unit_id)
+                ->where('is_active', true)
+                ->exists();
+
+            if (!$validUnit) {
+                return back()->withInput()->withErrors([
+                    'organization_unit_id' => 'Pilihan Atasan Langsung tidak valid atau pejabat tidak aktif.',
+                ]);
+            }
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($personel, $request, $isPejabat) {
             $user = User::create([
                 'name' => $personel->nama,
                 'email' => $request->email,
@@ -141,12 +197,17 @@ class AuthController extends Controller
                 'role' => 'user',
             ]);
 
-            $personel->update([
+            $updateData = [
                 'user_id' => $user->id,
                 'email' => $request->email,
                 'no_hp' => $request->no_hp,
-                'organization_unit_id' => $request->organization_unit_id,
-            ]);
+            ];
+            
+            if (!$isPejabat) {
+                $updateData['organization_unit_id'] = $request->organization_unit_id;
+            }
+            
+            $personel->update($updateData);
 
             LeaveEntitlement::firstOrCreate([
                 'user_id' => $user->id,

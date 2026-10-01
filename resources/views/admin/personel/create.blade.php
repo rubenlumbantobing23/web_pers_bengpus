@@ -220,8 +220,9 @@
                     <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="08123456789" value="{{ old('no_hp') }}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="email">Email (untuk akun login)</label>
+                    <label class="form-label" for="email">Alamat Email</label>
                     <input type="email" id="email" name="email" class="form-control" value="{{ old('email') }}">
+                    <small class="text-muted" style="color: rgba(255, 255, 255, 0.5) !important;">Email digunakan untuk reset password dan menerima notifikasi sistem.</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="password">Password Akun</label>

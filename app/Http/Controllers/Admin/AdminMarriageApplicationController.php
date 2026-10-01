@@ -10,6 +10,7 @@ use App\Models\MarriageApplication;
 use App\Models\MarriageDocument;
 use App\Models\MarriageStatusHistory;
 use App\Models\MarriageLetter;
+use App\Services\MarriageApplicationLetterService;
 
 class AdminMarriageApplicationController extends Controller
 {
@@ -24,7 +25,7 @@ class AdminMarriageApplicationController extends Controller
     }
 
     // ─── show ────────────────────────────────────────────
-    public function show($id)
+    public function show($id, MarriageApplicationLetterService $letterService)
     {
         $application = MarriageApplication::with([
             'user',
@@ -34,6 +35,29 @@ class AdminMarriageApplicationController extends Controller
             'statusHistories.changer',
             'letters.generator',
         ])->findOrFail($id);
+
+        $eligibleLetters = [MarriageApplicationLetterService::INITIAL_CODE];
+        $stage1Type = \App\Models\MarriageDocumentType::where('code', MarriageApplicationLetterService::INITIAL_CODE)->first();
+        $stage1Accepted = $stage1Type && $application->documents
+            ->where('marriage_document_type_id', $stage1Type->id)
+            ->contains(fn ($document) => $document->status_verifikasi === 'DITERIMA');
+
+        if ($stage1Accepted && in_array($application->status, [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI,
+        ])) {
+            $eligibleLetters = array_merge($eligibleLetters, MarriageApplicationLetterService::COVER_CODES);
+        }
+
+        if (in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            $eligibleLetters[] = MarriageApplicationLetterService::FINAL_CODE;
+        }
+
+        $letterService->ensureGenerated($application, $eligibleLetters, Auth::id());
+        $application->load('letters.generator');
 
         $docTypes = \App\Models\MarriageDocumentType::where(function ($q) {
                 $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
@@ -49,17 +73,118 @@ class AdminMarriageApplicationController extends Controller
             if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
                 return false;
             }
+            if ($dt->code === 'DOKUMEN_LAIN_CALON_PASANGAN') {
+                return false;
+            }
             if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
                 return $application->partner && $application->partner->status_pekerjaan === 'ASN';
             }
             return true;
         });
 
-        $coverLetters = \App\Models\MarriageDocumentType::whereIn('code', [
-            'PENGANTAR_NA', 'PENGANTAR_KESDAM', 'PENGANTAR_BINTALDAM', 'PENGANTAR_LITPERS', 'PENGANTAR_SKBD'
-        ])->where('is_active', true)->orderBy('sort_order')->get();
+        $coverLetters = \App\Models\MarriageDocumentType::whereIn('code', MarriageApplicationLetterService::COVER_CODES)
+            ->where('is_active', true)->orderBy('sort_order')->get();
 
         return view('admin.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan', 'coverLetters'));
+    }
+
+    // ─── documents (TAHAP 2) ─────────────────────────────
+    public function documents($id)
+    {
+        $application = MarriageApplication::with(['user', 'personel', 'partner', 'documents'])->findOrFail($id);
+
+        $docTypeSPN = \App\Models\MarriageDocumentType::where('code', 'SURAT_PERMOHONAN_IZIN_NIKAH')->first();
+        if ($docTypeSPN) {
+            $docSPN = $application->documents()->where('marriage_document_type_id', $docTypeSPN->id)->first();
+            if (!$docSPN || $docSPN->status_verifikasi !== 'DITERIMA') {
+                return redirect()->route('admin.admin.pengajuan_nikah.show', $application->id)->with('error', 'Tahap 2 belum dapat diakses. Surat Permohonan Izin Nikah harus disetujui/diterima terlebih dahulu.');
+            }
+        }
+
+        $docTypes = \App\Models\MarriageDocumentType::where(function ($q) {
+                $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                  ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            })
+            ->where('is_active', true)
+            ->get();
+
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA' || $dt->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
+        $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
+            if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
+                return false;
+            }
+            if ($dt->code === 'DOKUMEN_LAIN_CALON_PASANGAN') {
+                return false;
+            }
+            if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+            }
+            return true;
+        });
+
+        $countAnggota = $requiredAnggota->count();
+        $countPasangan = $requiredPasangan->count();
+
+        $verifiedAnggota = 0;
+        foreach ($requiredAnggota as $dt) {
+            $doc = $application->documents->where('marriage_document_type_id', $dt->id)->first();
+            if ($doc && $doc->status_verifikasi === 'DITERIMA') $verifiedAnggota++;
+        }
+
+        $verifiedPasangan = 0;
+        foreach ($requiredPasangan as $dt) {
+            $doc = $application->documents->where('marriage_document_type_id', $dt->id)->first();
+            if ($doc && $doc->status_verifikasi === 'DITERIMA') $verifiedPasangan++;
+        }
+
+        return view('admin.marriage_applications.documents', compact(
+            'application', 'countAnggota', 'verifiedAnggota', 'countPasangan', 'verifiedPasangan'
+        ));
+    }
+
+    // ─── documentReview (TAHAP 2 DETAIL) ─────────────────
+    public function documentReview($id, $type)
+    {
+        if (!in_array($type, ['anggota', 'pasangan'])) {
+            abort(404);
+        }
+
+        $application = MarriageApplication::with(['user', 'personel', 'partner', 'documents'])->findOrFail($id);
+
+        $docTypeSPN = \App\Models\MarriageDocumentType::where('code', 'SURAT_PERMOHONAN_IZIN_NIKAH')->first();
+        if ($docTypeSPN) {
+            $docSPN = $application->documents()->where('marriage_document_type_id', $docTypeSPN->id)->first();
+            if (!$docSPN || $docSPN->status_verifikasi !== 'DITERIMA') {
+                return redirect()->route('admin.admin.pengajuan_nikah.show', $application->id)->with('error', 'Tahap 2 belum dapat diakses. Surat Permohonan Izin Nikah harus disetujui/diterima terlebih dahulu.');
+            }
+        }
+
+        $docTypes = \App\Models\MarriageDocumentType::where(function ($q) {
+                $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                  ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            })
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        if ($type === 'anggota') {
+            $requiredDocs = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA' || $dt->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
+        } else {
+            $requiredDocs = $docTypes->filter(function($dt) use ($application) {
+                if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
+                    return false;
+                }
+                if ($dt->code === 'DOKUMEN_LAIN_CALON_PASANGAN') {
+                    return false;
+                }
+                if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                    return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+                }
+                return true;
+            });
+        }
+
+        return view('admin.marriage_applications.document_review', compact('application', 'requiredDocs', 'type'));
     }
 
     // ─── verifyDocument ──────────────────────────────────
@@ -81,80 +206,119 @@ class AdminMarriageApplicationController extends Controller
             'verified_by'        => Auth::id(),
         ]);
 
-        // If document rejected, auto-change application status to PERLU_PERBAIKAN
-        if ($request->status === 'DITOLAK' && $application->status !== 'PERLU_PERBAIKAN') {
-            $application->update(['status' => 'PERLU_PERBAIKAN']);
-            MarriageStatusHistory::create([
-                'marriage_application_id' => $application->id,
-                'status'     => 'PERLU_PERBAIKAN',
-                'catatan'    => 'Dokumen "' . $document->jenis_dokumen . '" ditolak. Anggota diminta memperbaiki dokumen tersebut.' . ($request->catatan ? ' Catatan: ' . $request->catatan : ''),
-                'changed_by' => Auth::id(),
-            ]);
-        }
+        $this->syncStatusFromDocumentReview($application, $document, $request->catatan);
 
         $action = $request->status === 'DITERIMA' ? 'diterima' : 'ditolak';
         return redirect()->back()->with('success', 'Dokumen "' . $document->jenis_dokumen . '" berhasil ' . $action . '.');
     }
 
+    /** Keep the application status aligned with verified document conditions. */
+    private function syncStatusFromDocumentReview(MarriageApplication $application, MarriageDocument $reviewedDocument, ?string $reviewNote): void
+    {
+        if (in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            return;
+        }
+
+        $docTypes = \App\Models\MarriageDocumentType::where(function ($query) {
+            $query->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+        })->where('is_active', true)->get();
+
+        $requiredTypes = $docTypes->filter(function ($type) use ($application) {
+            if (in_array($type->code, ['SURAT_PERMOHONAN_IZIN_NIKAH', 'DOKUMEN_LAIN_CALON_PASANGAN'])) {
+                return $type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH';
+            }
+
+            if (in_array($type->owner_type, ['ANGGOTA', 'ORANG_TUA_ANGGOTA'])) {
+                return true;
+            }
+
+            if (in_array($type->owner_type, ['PASANGAN', 'ORANG_TUA_PASANGAN'])) {
+                return $type->code !== 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN'
+                    || ($application->partner && $application->partner->status_pekerjaan === 'ASN');
+            }
+
+            return false;
+        });
+
+        $requiredDocuments = $requiredTypes->map(function ($type) use ($application) {
+            return $application->documents()->where('marriage_document_type_id', $type->id)->first();
+        });
+
+        $hasRejectedDocument = $requiredDocuments->contains(fn ($document) => $document && $document->status_verifikasi === 'DITOLAK');
+        $spnType = $requiredTypes->firstWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+        $spn = $spnType ? $application->documents()->where('marriage_document_type_id', $spnType->id)->first() : null;
+        $spnAccepted = $spn && $spn->status_verifikasi === 'DITERIMA';
+
+        if ($hasRejectedDocument) {
+            $nextStatus = MarriageApplication::STATUS_PERLU_PERBAIKAN;
+            $historyNote = 'Dokumen "' . $reviewedDocument->jenis_dokumen . '" ditolak. Anggota diminta memperbaiki dokumen tersebut.';
+            if ($reviewNote) {
+                $historyNote .= ' Catatan: ' . $reviewNote;
+            }
+        } elseif (!$spnAccepted) {
+            return;
+        } else {
+            $otherRequiredTypes = $requiredTypes->reject(fn ($type) => $type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            $allRequirementsAccepted = $otherRequiredTypes->every(function ($type) use ($application) {
+                    $document = $application->documents()->where('marriage_document_type_id', $type->id)->first();
+                    return $document && $document->status_verifikasi === 'DITERIMA';
+                });
+
+            $nextStatus = $allRequirementsAccepted
+                ? MarriageApplication::STATUS_DIVERIFIKASI
+                : MarriageApplication::STATUS_PENGAJUAN_DISETUJUI;
+            $historyNote = $nextStatus === MarriageApplication::STATUS_DIVERIFIKASI
+                ? 'Seluruh dokumen persyaratan wajib telah diterima.'
+                : 'Surat Permohonan Izin Nikah telah diterima.';
+        }
+
+        if ($application->status === $nextStatus) {
+            return;
+        }
+
+        $application->update(['status' => $nextStatus]);
+        MarriageStatusHistory::create([
+            'marriage_application_id' => $application->id,
+            'status' => $nextStatus,
+            'catatan' => $historyNote,
+            'changed_by' => Auth::id(),
+        ]);
+    }
+
     // ─── updateStatus ────────────────────────────────────
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(Request $request, $id, MarriageApplicationLetterService $letterService)
     {
         $request->validate([
-            'status'  => 'required|in:PENGAJUAN_DISETUJUI,DITOLAK,DIVERIFIKASI,DISETUJUI,SELESAI',
+            'status'  => 'required|in:DITOLAK,DISETUJUI,SELESAI',
             'catatan' => 'nullable|string|max:1000',
         ]);
 
         $application = MarriageApplication::findOrFail($id);
         $newStatus = $request->status;
 
-        // --- State Machine Transitions ---
-        if ($newStatus === MarriageApplication::STATUS_PENGAJUAN_DISETUJUI) {
-            if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
-                return redirect()->back()->with('error', 'Hanya pengajuan status DIAJUKAN yang dapat disetujui awal.');
-            }
-            
-            $docTypeSPN = \App\Models\MarriageDocumentType::where('code', 'SURAT_PERMOHONAN_IZIN_NIKAH')->first();
-            if ($docTypeSPN) {
-                $docSPN = $application->documents()->where('marriage_document_type_id', $docTypeSPN->id)->first();
-                if (!$docSPN || $docSPN->status_verifikasi !== 'DITERIMA') {
-                    return redirect()->back()->with('error', 'Surat Pengajuan Nikah (signed-return) belum diunggah atau belum diverifikasi/diterima.');
-                }
-            }
-        } elseif ($newStatus === MarriageApplication::STATUS_DITOLAK) {
+        // --- Explicit admin decisions only; document review states are synchronized automatically. ---
+        if ($newStatus === MarriageApplication::STATUS_DITOLAK) {
             if ($application->status !== MarriageApplication::STATUS_DIAJUKAN) {
                 return redirect()->back()->with('error', 'Penolakan awal hanya dapat dilakukan pada status DIAJUKAN.');
             }
             if (empty($request->catatan)) {
                 return redirect()->back()->with('error', 'Alasan penolakan wajib diisi.');
             }
-        } elseif ($newStatus === MarriageApplication::STATUS_DIVERIFIKASI) {
-            if (!in_array($application->status, [MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, MarriageApplication::STATUS_PERLU_PERBAIKAN])) {
-                return redirect()->back()->with('error', 'Status tidak valid untuk DIVERIFIKASI.');
-            }
-            
-            $docTypes = \App\Models\MarriageDocumentType::whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
-                ->where('is_active', true)
-                ->get();
-            
-            $requiredDocs = $docTypes->filter(function($dt) use ($application) {
-                if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
-                    return $application->partner && $application->partner->status_pekerjaan === 'ASN';
-                }
-                return true;
-            });
-
-            foreach ($requiredDocs as $docType) {
-                $doc = $application->documents()->where('marriage_document_type_id', $docType->id)->first();
-                if (!$doc) {
-                    return redirect()->back()->with('error', 'Masih terdapat dokumen wajib yang BELUM ADA. Pastikan semua dokumen diunggah dan diterima sebelum mengubah status ke DIVERIFIKASI.');
-                }
-                if ($doc->status_verifikasi !== 'DITERIMA') {
-                    return redirect()->back()->with('error', 'Masih terdapat dokumen yang ' . $doc->status_verifikasi . '. Pastikan semua dokumen DITERIMA sebelum mengubah status ke DIVERIFIKASI.');
-                }
-            }
         } elseif ($newStatus === MarriageApplication::STATUS_DISETUJUI) {
             if ($application->status !== MarriageApplication::STATUS_DIVERIFIKASI) {
-                return redirect()->back()->with('error', 'Hanya pengajuan status DIVERIFIKASI yang dapat diberikan Approval Akhir (DISETUJUI).');
+                return redirect()->back()->with('error', 'Approval akhir hanya dapat diberikan setelah semua dokumen diterima dan status otomatis menjadi DIVERIFIKASI.');
+            }
+
+            // Prepare the final permit before approving so the member can download it immediately.
+            $letterService->ensureGenerated($application, [MarriageApplicationLetterService::FINAL_CODE], Auth::id());
+            $finalLetter = MarriageLetter::where('marriage_application_id', $application->id)
+                ->where('jenis_surat', MarriageApplicationLetterService::FINAL_CODE)
+                ->where('status', 'TERSEDIA')
+                ->first();
+
+            if (!$finalLetter || !Storage::disk('private')->exists($finalLetter->file_generated)) {
+                return redirect()->back()->with('error', 'Pengajuan belum disetujui karena Surat Izin Nikah final belum berhasil dibuat. Periksa template surat final lalu coba lagi.');
             }
 
             try {
@@ -175,7 +339,7 @@ class AdminMarriageApplicationController extends Controller
                         'changed_by' => Auth::id(),
                     ]);
                 });
-                return redirect()->back()->with('success', 'Approval akhir berhasil. Status pernikahan personel telah diubah menjadi Menikah.');
+                return redirect()->back()->with('success', 'Pengajuan disetujui dan Surat Izin Nikah final berhasil dibuat. Surat kini tersedia di halaman anggota.');
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', 'Gagal memproses Approval Akhir: ' . $e->getMessage());
             }

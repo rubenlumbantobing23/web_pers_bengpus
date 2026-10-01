@@ -140,6 +140,59 @@
         </div>
     </div>
 
+    {{-- ═══ SECTION 3B: DATA ORANG TUA / WALI ANGGOTA ═════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">3B</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Orang Tua / Wali Anggota</h3>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #60a5fa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person"></i> Data Bapak / Wali
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div class="form-group">
+                <label>Nama Bapak / Wali <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_nama" class="form-control" value="{{ old('bapak_anggota_nama') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_agama" class="form-control" value="{{ old('bapak_anggota_agama') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_pekerjaan" class="form-control" value="{{ old('bapak_anggota_pekerjaan') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_alamat" class="form-control" value="{{ old('bapak_anggota_alamat') }}" required>
+            </div>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #f472b6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person-dress"></i> Data Ibu
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Nama Ibu <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_nama" class="form-control" value="{{ old('ibu_anggota_nama') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_agama" class="form-control" value="{{ old('ibu_anggota_agama') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_pekerjaan" class="form-control" value="{{ old('ibu_anggota_pekerjaan') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_alamat" class="form-control" value="{{ old('ibu_anggota_alamat') }}" required>
+            </div>
+        </div>
+    </div>
+
+
     {{-- ═══ SECTION 4: DATA CALON PASANGAN ════════════════════════════════ --}}
     <div class="glass-card" style="margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
@@ -150,6 +203,19 @@
             <div class="form-group">
                 <label>Nama Lengkap <span class="text-danger">*</span></label>
                 <input type="text" name="pasangan_nama" class="form-control" value="{{ old('pasangan_nama') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Status Pernikahan <span class="text-danger">*</span></label>
+                <select name="pasangan_status_pernikahan" class="form-control" required>
+                    <option value="">-- Pilih Status --</option>
+                    @if(strtolower($peranAnggota) === 'suami')
+                        <option value="Gadis" {{ old('pasangan_status_pernikahan') == 'Gadis' ? 'selected' : '' }}>Gadis</option>
+                        <option value="Janda" {{ old('pasangan_status_pernikahan') == 'Janda' ? 'selected' : '' }}>Janda</option>
+                    @else
+                        <option value="Jejaka" {{ old('pasangan_status_pernikahan') == 'Jejaka' ? 'selected' : '' }}>Jejaka</option>
+                        <option value="Duda" {{ old('pasangan_status_pernikahan') == 'Duda' ? 'selected' : '' }}>Duda</option>
+                    @endif
+                </select>
             </div>
             <div class="form-group">
                 <label>Agama <span class="text-danger">*</span></label>
@@ -167,27 +233,9 @@
                 <label>Suku Bangsa <span class="text-danger">*</span></label>
                 <input type="text" name="pasangan_suku" class="form-control" value="{{ old('pasangan_suku') }}" required>
             </div>
-            <div class="form-group">
-                <label>Status Pekerjaan <span class="text-danger">*</span></label>
-                <select name="pasangan_status_pekerjaan" class="form-control" id="status-pekerjaan-select" onchange="toggleAsnFields(this.value)" required>
-                    <option value="">-- Pilih Status Pekerjaan --</option>
-                    <option value="Non-ASN" {{ old('pasangan_status_pekerjaan') == 'Non-ASN' ? 'selected' : '' }}>Non-ASN / Swasta / Lainnya</option>
-                    <option value="ASN" {{ old('pasangan_status_pekerjaan') == 'ASN' ? 'selected' : '' }}>ASN / TNI / POLRI</option>
-                </select>
-            </div>
             <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Pekerjaan (Deskripsi Lengkap) <span class="text-danger">*</span></label>
-                <input type="text" name="pasangan_pekerjaan" class="form-control" value="{{ old('pasangan_pekerjaan') }}" placeholder="Contoh: Karyawan Swasta, Wiraswasta, PNS Guru, dll" required>
-            </div>
-
-            {{-- ASN-only fields --}}
-            <div class="form-group asn-only" style="display: {{ old('pasangan_status_pekerjaan') == 'ASN' ? 'block' : 'none' }};">
-                <label>Instansi / Satuan Kerja <span class="text-danger asn-required">*</span></label>
-                <input type="text" name="pasangan_instansi" class="form-control" value="{{ old('pasangan_instansi') }}" {{ old('pasangan_status_pekerjaan') == 'ASN' ? 'required' : '' }}>
-            </div>
-            <div class="form-group asn-only" style="display: {{ old('pasangan_status_pekerjaan') == 'ASN' ? 'block' : 'none' }};">
-                <label>Jabatan di Instansi <span class="text-danger asn-required">*</span></label>
-                <input type="text" name="pasangan_jabatan" class="form-control" value="{{ old('pasangan_jabatan') }}" {{ old('pasangan_status_pekerjaan') == 'ASN' ? 'required' : '' }}>
+                <input type="text" name="pasangan_pekerjaan" class="form-control" value="{{ old('pasangan_pekerjaan') }}" placeholder="Contoh: Hakim, Karyawan Swasta, Wiraswasta, PNS Guru, dll" required>
             </div>
 
             <div class="form-group" style="grid-column: 1 / -1;">
@@ -270,11 +318,8 @@
         <a href="{{ route('user.pengajuan_nikah.index') }}" class="btn-military" style="background: rgba(255,255,255,0.08);">
             <i class="fa-solid fa-xmark"></i> Batal
         </a>
-        <button type="submit" form="form-nikah" name="_action" value="draft" formaction="{{ route('user.pengajuan_nikah.save_draft') }}" class="btn-military" style="background: rgba(100,116,139,0.4); border-color: rgba(100,116,139,0.6);">
-            <i class="fa-solid fa-floppy-disk"></i> Simpan sebagai Draft
-        </button>
         <button type="submit" class="btn-military">
-            <i class="fa-solid fa-paper-plane"></i> Ajukan ke Admin
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Pengajuan
         </button>
     </div>
 
@@ -282,25 +327,5 @@
 
 </div>
 
-<script>
-function toggleAsnFields(val) {
-    document.querySelectorAll('.asn-only').forEach(el => {
-        el.style.display = val === 'ASN' ? 'block' : 'none';
-        const input = el.querySelector('input');
-        if (input) {
-            if (val === 'ASN') {
-                input.setAttribute('required', 'required');
-            } else {
-                input.removeAttribute('required');
-                input.value = '';
-            }
-        }
-    });
-}
-// Initialize on page load with old value
-document.addEventListener('DOMContentLoaded', function() {
-    const sel = document.getElementById('status-pekerjaan-select');
-    if (sel && sel.value) toggleAsnFields(sel.value);
-});
-</script>
+
 @endsection

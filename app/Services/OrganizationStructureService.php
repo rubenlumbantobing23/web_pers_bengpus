@@ -111,9 +111,20 @@ class OrganizationStructureService
      */
     public function getSupervisorForPersonel(?Personel $personel): ?Personel
     {
-        if (!$personel || !$personel->organization_unit_id) {
-            // Fallback to Kabagum or Kabeng if no unit is assigned
-            return $this->getSignerPersonel('kabagum') ?? $this->getSignerPersonel('kabeng');
+        if (!$personel) {
+            return null;
+        }
+
+        if (!$personel->organization_unit_id) {
+            $fallbackKabagum = $this->getSignerPersonel('kabagum');
+            if ($fallbackKabagum && $fallbackKabagum->id !== $personel->id) {
+                return $fallbackKabagum;
+            }
+            $fallbackKabeng = $this->getSignerPersonel('kabeng');
+            if ($fallbackKabeng && $fallbackKabeng->id !== $personel->id) {
+                return $fallbackKabeng;
+            }
+            return null;
         }
 
         $currentUnitId = $personel->organization_unit_id;
@@ -131,15 +142,76 @@ class OrganizationStructureService
                 ->first();
 
             if ($assignment && $assignment->personel) {
-                return $assignment->personel;
+                if ($assignment->personel_id !== $personel->id) {
+                    return $assignment->personel;
+                }
             }
 
-            // If not found, go up to the parent unit
+            // If not found or if the official is themselves, go up to the parent unit
             $currentUnitId = $unit->parent_id;
         }
 
         // Fallback if no supervisor is found in the hierarchy
-        return $this->getSignerPersonel('kabagum') ?? $this->getSignerPersonel('kabeng');
+        $fallbackKabagum = $this->getSignerPersonel('kabagum');
+        if ($fallbackKabagum && $fallbackKabagum->id !== $personel->id) {
+            return $fallbackKabagum;
+        }
+        $fallbackKabeng = $this->getSignerPersonel('kabeng');
+        if ($fallbackKabeng && $fallbackKabeng->id !== $personel->id) {
+            return $fallbackKabeng;
+        }
+
+        return null;
+    }
+
+    /** Resolve the nearest active Kabag assignment linked to the person's unit hierarchy. */
+    public function getKabagForPersonel(?Personel $personel): ?Personel
+    {
+        if (!$personel) {
+            return null;
+        }
+
+        $unitId = $personel->organization_unit_id;
+        if (!$unitId && $personel->satuan_bagian) {
+            $unitId = OrganizationUnit::where('is_active', true)
+                ->where(function ($query) use ($personel) {
+                    $query->where('name', trim($personel->satuan_bagian))
+                        ->orWhere('code', trim($personel->satuan_bagian));
+                })
+                ->value('id');
+        }
+
+        if (!$unitId) {
+            return null;
+        }
+
+        $visited = [];
+
+        while ($unitId && !in_array($unitId, $visited, true)) {
+            $visited[] = $unitId;
+
+            $assignments = OrganizationOfficialAssignment::where('organization_unit_id', $unitId)
+                ->whereIn('role', ['kabag', 'kabagum', 'kabagrendal'])
+                ->where('is_active', true)
+                ->with('personel')
+                ->latest('valid_from')
+                ->get();
+
+            $assignment = $assignments->sortBy(fn ($item) => match ($item->role) {
+                'kabag' => 0,
+                'kabagum' => 1,
+                'kabagrendal' => 2,
+                default => 3,
+            })->first(fn ($item) => $item->personel && $item->personel_id !== $personel->id);
+
+            if ($assignment) {
+                return $assignment->personel;
+            }
+
+            $unitId = OrganizationUnit::whereKey($unitId)->value('parent_id');
+        }
+
+        return null;
     }
 
     /**

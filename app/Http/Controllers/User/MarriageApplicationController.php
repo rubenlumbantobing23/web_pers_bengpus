@@ -12,6 +12,8 @@ use App\Models\MarriageStatusHistory;
 use App\Models\MarriageDocumentType;
 use App\Models\MarriageLetter;
 use App\Services\MarriageLetterGenerator;
+use App\Services\MarriageApplicationLetterService;
+use Illuminate\Validation\Rule;
 
 class MarriageApplicationController extends Controller
 {
@@ -113,21 +115,39 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'   => $request->kabupaten_domisili ?: '-',
             'provinsi_domisili'    => $request->provinsi_domisili ?: '-',
             'kua_tujuan'           => $request->kua_tujuan ?: '-',
+            'bapak_anggota_nama'      => $request->bapak_anggota_nama ?: '-',
+            'bapak_anggota_agama'     => $request->bapak_anggota_agama ?: '-',
+            'bapak_anggota_pekerjaan' => $request->bapak_anggota_pekerjaan ?: '-',
+            'bapak_anggota_alamat'    => $request->bapak_anggota_alamat ?: '-',
+            'ibu_anggota_nama'        => $request->ibu_anggota_nama ?: '-',
+            'ibu_anggota_agama'       => $request->ibu_anggota_agama ?: '-',
+            'ibu_anggota_pekerjaan'   => $request->ibu_anggota_pekerjaan ?: '-',
+            'ibu_anggota_alamat'      => $request->ibu_anggota_alamat ?: '-',
             'status'               => 'DRAFT',
         ]);
 
         // Save partner data if partial is provided
         if ($request->filled('pasangan_nama')) {
+            if ($request->filled('pasangan_status_pernikahan')) {
+                $allowedStatusPasangan = strtolower($peranAnggota) === 'suami' ? ['Gadis', 'Janda'] : ['Jejaka', 'Duda'];
+                $request->validate([
+                    'pasangan_status_pernikahan' => [
+                        Rule::in($allowedStatusPasangan),
+                    ],
+                ]);
+            }
+
             MarriagePartner::create([
                 'marriage_application_id' => $application->id,
                 'peran'           => $peranPasangan,
+                'status_pernikahan'=> $request->pasangan_status_pernikahan,
                 'nama'            => $request->pasangan_nama ?: '-',
                 'tempat_lahir'    => $request->pasangan_tempat_lahir ?: '-',
                 'tanggal_lahir'   => $request->pasangan_tanggal_lahir ?: now(),
                 'pekerjaan'       => $request->pasangan_pekerjaan ?: '-',
-                'status_pekerjaan'=> $request->pasangan_status_pekerjaan ?: 'Non-ASN',
-                'instansi'        => $request->pasangan_instansi,
-                'jabatan'         => $request->pasangan_jabatan,
+                'status_pekerjaan'=> 'Non-ASN',
+                'instansi'        => null,
+                'jabatan'         => null,
                 'agama'           => $request->pasangan_agama ?: '-',
                 'suku'            => $request->pasangan_suku ?: '-',
                 'alamat'          => $request->pasangan_alamat ?: '-',
@@ -154,7 +174,7 @@ class MarriageApplicationController extends Controller
         ]);
 
         return redirect()->route('user.pengajuan_nikah.show', $application->id)
-            ->with('success', 'Draft berhasil disimpan. Lengkapi data sebelum mengajukan ke Admin.');
+            ->with('success', 'Form Pengajuan Nikah berhasil disimpan. Silakan lanjutkan ke Tahap 1 untuk membuat Surat Permohonan Izin Nikah.');
     }
 
     // ─── store (final submit) ────────────────────────────
@@ -191,12 +211,13 @@ class MarriageApplicationController extends Controller
             'provinsi_nikah'        => 'required|string|max:100',
             // Pasangan
             'pasangan_nama'             => 'required|string|max:255',
+            'pasangan_status_pernikahan'=> [
+                'required',
+                Rule::in(strtolower($peranAnggota) === 'suami' ? ['Gadis', 'Janda'] : ['Jejaka', 'Duda']),
+            ],
             'pasangan_tempat_lahir'     => 'required|string|max:100',
             'pasangan_tanggal_lahir'    => 'required|date',
             'pasangan_pekerjaan'        => 'required|string|max:255',
-            'pasangan_status_pekerjaan' => 'required|in:ASN,Non-ASN',
-            'pasangan_instansi'         => 'nullable|required_if:pasangan_status_pekerjaan,ASN|string|max:255',
-            'pasangan_jabatan'          => 'nullable|required_if:pasangan_status_pekerjaan,ASN|string|max:255',
             'pasangan_agama'            => 'required|string|max:100',
             'pasangan_suku'             => 'required|string|max:100',
             'pasangan_alamat'           => 'required|string|max:500',
@@ -211,7 +232,16 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'        => 'required|string|max:100',
             'provinsi_domisili'         => 'required|string|max:100',
             'kua_tujuan'                => 'required|string|max:100',
-            // Orang Tua
+            // Orang Tua Anggota
+            'bapak_anggota_nama'      => 'required|string|max:255',
+            'bapak_anggota_agama'     => 'required|string|max:100',
+            'bapak_anggota_pekerjaan' => 'required|string|max:255',
+            'bapak_anggota_alamat'    => 'required|string|max:500',
+            'ibu_anggota_nama'        => 'required|string|max:255',
+            'ibu_anggota_agama'       => 'required|string|max:100',
+            'ibu_anggota_pekerjaan'   => 'required|string|max:255',
+            'ibu_anggota_alamat'      => 'required|string|max:500',
+            // Orang Tua Pasangan
             'bapak_nama'      => 'required|string|max:255',
             'bapak_agama'     => 'required|string|max:100',
             'bapak_pekerjaan' => 'required|string|max:255',
@@ -241,19 +271,28 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'    => $validated['kabupaten_domisili'],
             'provinsi_domisili'     => $validated['provinsi_domisili'],
             'kua_tujuan'            => $validated['kua_tujuan'],
-            'status'                => 'DIAJUKAN',
+            'bapak_anggota_nama'      => $validated['bapak_anggota_nama'],
+            'bapak_anggota_agama'     => $validated['bapak_anggota_agama'],
+            'bapak_anggota_pekerjaan' => $validated['bapak_anggota_pekerjaan'],
+            'bapak_anggota_alamat'    => $validated['bapak_anggota_alamat'],
+            'ibu_anggota_nama'        => $validated['ibu_anggota_nama'],
+            'ibu_anggota_agama'       => $validated['ibu_anggota_agama'],
+            'ibu_anggota_pekerjaan'   => $validated['ibu_anggota_pekerjaan'],
+            'ibu_anggota_alamat'      => $validated['ibu_anggota_alamat'],
+            'status'                => 'DRAFT',
         ]);
 
         MarriagePartner::create([
             'marriage_application_id' => $application->id,
             'peran'            => $peranPasangan,
+            'status_pernikahan'=> $validated['pasangan_status_pernikahan'],
             'nama'             => $validated['pasangan_nama'],
             'tempat_lahir'     => $validated['pasangan_tempat_lahir'],
             'tanggal_lahir'    => $validated['pasangan_tanggal_lahir'],
             'pekerjaan'        => $validated['pasangan_pekerjaan'],
-            'status_pekerjaan' => $validated['pasangan_status_pekerjaan'],
-            'instansi'         => $request->pasangan_instansi,
-            'jabatan'          => $request->pasangan_jabatan,
+            'status_pekerjaan' => 'Non-ASN',
+            'instansi'         => null,
+            'jabatan'          => null,
             'agama'            => $validated['pasangan_agama'],
             'suku'             => $validated['pasangan_suku'],
             'alamat'           => $validated['pasangan_alamat'],
@@ -273,13 +312,159 @@ class MarriageApplicationController extends Controller
 
         MarriageStatusHistory::create([
             'marriage_application_id' => $application->id,
-            'status'     => 'DIAJUKAN',
-            'catatan'    => 'Pengajuan nikah disubmit oleh anggota dan menunggu verifikasi Admin.',
+            'status'     => 'DRAFT',
+            'catatan'    => 'Pengajuan disimpan sebagai DRAFT oleh anggota.',
             'changed_by' => $user->id,
         ]);
 
         return redirect()->route('user.pengajuan_nikah.show', $application->id)
-            ->with('success', 'Pengajuan berhasil dibuat dengan status DIAJUKAN. Segera unggah dokumen persyaratan.');
+            ->with('success', 'Form Pengajuan Nikah berhasil disimpan. Silakan lanjutkan ke Tahap 1 untuk membuat Surat Permohonan Izin Nikah.');
+    }
+
+    // ─── edit ────────────────────────────────────────────
+    public function edit($id)
+    {
+        $application = Auth::user()->marriageApplications()->with('partner')->findOrFail($id);
+
+        if (!in_array($application->status, [MarriageApplication::STATUS_DRAFT, MarriageApplication::STATUS_DITOLAK])) {
+            return redirect()->route('user.pengajuan_nikah.show', $id)
+                ->with('error', 'Hanya pengajuan berstatus DRAFT atau DITOLAK yang dapat diedit.');
+        }
+
+        $user = Auth::user();
+        $personel = $user->personel;
+        [$peranAnggota, $peranPasangan, $genderPasangan] = $this->resolvePeran($personel->jenis_kelamin);
+
+        return view('user.marriage_applications.edit', compact('application', 'personel', 'peranAnggota', 'peranPasangan', 'genderPasangan'));
+    }
+
+    // ─── update ──────────────────────────────────────────
+    public function update(Request $request, $id, MarriageApplicationLetterService $letterService)
+    {
+        $application = Auth::user()->marriageApplications()->with('partner')->findOrFail($id);
+
+        if (!in_array($application->status, [MarriageApplication::STATUS_DRAFT, MarriageApplication::STATUS_DITOLAK])) {
+            return redirect()->route('user.pengajuan_nikah.show', $id)
+                ->with('error', 'Hanya pengajuan berstatus DRAFT atau DITOLAK yang dapat diedit.');
+        }
+
+        $validated = $request->validate([
+            // Pernikahan
+            'tanggal_rencana_nikah' => 'required|date',
+            'tempat_nikah'          => 'required|string|max:255',
+            'alamat_nikah'          => 'required|string|max:500',
+            'kelurahan_nikah'       => 'required|string|max:100',
+            'kecamatan_nikah'       => 'required|string|max:100',
+            'kabupaten_nikah'       => 'required|string|max:100',
+            'provinsi_nikah'        => 'required|string|max:100',
+            // Pasangan
+            'pasangan_nama'             => 'required|string|max:255',
+            'pasangan_status_pernikahan'=> [
+                'required',
+                Rule::in(strtolower($application->peran_anggota) === 'suami' ? ['Gadis', 'Janda'] : ['Jejaka', 'Duda']),
+            ],
+            'pasangan_tempat_lahir'     => 'required|string|max:100',
+            'pasangan_tanggal_lahir'    => 'required|date',
+            'pasangan_pekerjaan'        => 'required|string|max:255',
+            'pasangan_agama'            => 'required|string|max:100',
+            'pasangan_suku'             => 'required|string|max:100',
+            'pasangan_alamat'           => 'required|string|max:500',
+            'pasangan_kelurahan'        => 'required|string|max:100',
+            'pasangan_kecamatan'        => 'required|string|max:100',
+            'pasangan_kabupaten'        => 'required|string|max:100',
+            'pasangan_provinsi'         => 'required|string|max:100',
+            // Orang Tua Anggota
+            'bapak_anggota_nama'      => 'required|string|max:255',
+            'bapak_anggota_agama'     => 'required|string|max:100',
+            'bapak_anggota_pekerjaan' => 'required|string|max:255',
+            'bapak_anggota_alamat'    => 'required|string|max:500',
+            'ibu_anggota_nama'        => 'required|string|max:255',
+            'ibu_anggota_agama'       => 'required|string|max:100',
+            'ibu_anggota_pekerjaan'   => 'required|string|max:255',
+            'ibu_anggota_alamat'      => 'required|string|max:500',
+            // Orang Tua Pasangan
+            'bapak_nama'      => 'required|string|max:255',
+            'bapak_agama'     => 'required|string|max:100',
+            'bapak_pekerjaan' => 'required|string|max:255',
+            'bapak_alamat'    => 'required|string|max:500',
+            'ibu_nama'        => 'required|string|max:255',
+            'ibu_agama'       => 'required|string|max:100',
+            'ibu_pekerjaan'   => 'required|string|max:255',
+            'ibu_alamat'      => 'required|string|max:500',
+        ]);
+
+        $application->update([
+            'tanggal_rencana_nikah' => $validated['tanggal_rencana_nikah'],
+            'tempat_nikah'          => $validated['tempat_nikah'],
+            'alamat_nikah'          => $validated['alamat_nikah'],
+            'kelurahan_nikah'       => $validated['kelurahan_nikah'],
+            'kecamatan_nikah'       => $validated['kecamatan_nikah'],
+            'kabupaten_nikah'       => $validated['kabupaten_nikah'],
+            'provinsi_nikah'        => $validated['provinsi_nikah'],
+            'bapak_anggota_nama'      => $validated['bapak_anggota_nama'],
+            'bapak_anggota_agama'     => $validated['bapak_anggota_agama'],
+            'bapak_anggota_pekerjaan' => $validated['bapak_anggota_pekerjaan'],
+            'bapak_anggota_alamat'    => $validated['bapak_anggota_alamat'],
+            'ibu_anggota_nama'        => $validated['ibu_anggota_nama'],
+            'ibu_anggota_agama'       => $validated['ibu_anggota_agama'],
+            'ibu_anggota_pekerjaan'   => $validated['ibu_anggota_pekerjaan'],
+            'ibu_anggota_alamat'      => $validated['ibu_anggota_alamat'],
+        ]);
+
+        if ($application->partner) {
+            $application->partner->update([
+                'nama'             => $validated['pasangan_nama'],
+                'status_pernikahan'=> $validated['pasangan_status_pernikahan'],
+                'tempat_lahir'     => $validated['pasangan_tempat_lahir'],
+                'tanggal_lahir'    => $validated['pasangan_tanggal_lahir'],
+                'pekerjaan'        => $validated['pasangan_pekerjaan'],
+                'status_pekerjaan' => 'Non-ASN',
+                'instansi'         => null,
+                'jabatan'          => null,
+                'agama'            => $validated['pasangan_agama'],
+                'suku'             => $validated['pasangan_suku'],
+                'alamat'           => $validated['pasangan_alamat'],
+                'kelurahan'        => $validated['pasangan_kelurahan'],
+                'kecamatan'        => $validated['pasangan_kecamatan'],
+                'kabupaten'        => $validated['pasangan_kabupaten'],
+                'provinsi'         => $validated['pasangan_provinsi'],
+                'bapak_nama'       => $validated['bapak_nama'],
+                'bapak_agama'      => $validated['bapak_agama'],
+                'bapak_pekerjaan'  => $validated['bapak_pekerjaan'],
+                'bapak_alamat'     => $validated['bapak_alamat'],
+                'ibu_nama'         => $validated['ibu_nama'],
+                'ibu_agama'        => $validated['ibu_agama'],
+                'ibu_pekerjaan'    => $validated['ibu_pekerjaan'],
+                'ibu_alamat'       => $validated['ibu_alamat'],
+            ]);
+        }
+
+        if ($application->status === MarriageApplication::STATUS_DITOLAK) {
+            $application->update(['status' => MarriageApplication::STATUS_DRAFT]);
+            MarriageStatusHistory::create([
+                'marriage_application_id' => $application->id,
+                'status'     => 'DRAFT',
+                'catatan'    => 'Pengajuan diperbaiki oleh anggota dan dikembalikan ke DRAFT.',
+                'changed_by' => Auth::id(),
+            ]);
+        } else {
+            MarriageStatusHistory::create([
+                'marriage_application_id' => $application->id,
+                'status'     => 'DRAFT',
+                'catatan'    => 'Draft pengajuan diupdate oleh anggota.',
+                'changed_by' => Auth::id(),
+            ]);
+        }
+
+        $letterService->ensureGenerated(
+            $application->fresh(['personel', 'partner']),
+            [MarriageApplicationLetterService::INITIAL_CODE],
+            Auth::id(),
+            [MarriageApplicationLetterService::INITIAL_CODE]
+        );
+
+        return redirect()->route('user.pengajuan_nikah.show', $application->id)
+            ->with('success', 'Data pengajuan nikah berhasil diperbarui.');
     }
 
     // ─── submit (DRAFT → DIAJUKAN) ───────────────────────
@@ -293,6 +478,19 @@ class MarriageApplicationController extends Controller
 
         if (!$application->partner) {
             return redirect()->back()->with('error', 'Data pasangan belum diisi. Lengkapi form sebelum mengajukan.');
+        }
+
+        // Cek apakah SURAT_PERMOHONAN_IZIN_NIKAH sudah di-upload
+        $suratPermohonanDocType = MarriageDocumentType::where('code', 'SURAT_PERMOHONAN_IZIN_NIKAH')->first();
+        if ($suratPermohonanDocType) {
+            $suratUploaded = $application->documents()
+                ->where('marriage_document_type_id', $suratPermohonanDocType->id)
+                ->whereNotNull('file_path')
+                ->exists();
+
+            if (!$suratUploaded) {
+                return redirect()->back()->with('error', 'Silakan download Surat Permohonan Izin Nikah, minta tanda tangan Kabag, lalu upload kembali sebelum mengajukan.');
+            }
         }
 
         $application->update(['status' => 'DIAJUKAN']);
@@ -309,12 +507,35 @@ class MarriageApplicationController extends Controller
     }
 
     // ─── show ────────────────────────────────────────────
-    public function show($id)
+    public function show($id, MarriageApplicationLetterService $letterService)
     {
         $application = Auth::user()
             ->marriageApplications()
             ->with(['partner', 'documents', 'statusHistories.changer', 'letters'])
             ->findOrFail($id);
+
+        $eligibleLetters = [MarriageApplicationLetterService::INITIAL_CODE];
+        $stage1Type = MarriageDocumentType::where('code', MarriageApplicationLetterService::INITIAL_CODE)->first();
+        $stage1Accepted = $stage1Type && $application->documents
+            ->where('marriage_document_type_id', $stage1Type->id)
+            ->contains(fn ($document) => $document->status_verifikasi === 'DITERIMA');
+
+        if ($stage1Accepted && in_array($application->status, [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI,
+        ])) {
+            $eligibleLetters = array_merge($eligibleLetters, MarriageApplicationLetterService::COVER_CODES);
+        }
+
+        if (in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
+            $eligibleLetters[] = MarriageApplicationLetterService::FINAL_CODE;
+        }
+
+        $letterService->ensureGenerated($application, $eligibleLetters, Auth::id());
+        $application->load('letters');
 
         // ─── Document Requirements ─────────────────────────────
         $docTypes = MarriageDocumentType::where(function ($q) {
@@ -326,7 +547,7 @@ class MarriageApplicationController extends Controller
             ->get();
 
         $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA' || $dt->code === 'SURAT_PERMOHONAN_IZIN_NIKAH');
-        
+
         $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
             if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
                 return false;
@@ -334,14 +555,62 @@ class MarriageApplicationController extends Controller
             if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
                 return $application->partner && $application->partner->status_pekerjaan === 'ASN';
             }
+            if ($dt->code === 'DOKUMEN_LAIN_CALON_PASANGAN') {
+                return false;
+            }
             return true;
         });
 
-        $coverLetters = \App\Models\MarriageDocumentType::whereIn('code', [
-            'PENGANTAR_NA', 'PENGANTAR_KESDAM', 'PENGANTAR_BINTALDAM', 'PENGANTAR_LITPERS', 'PENGANTAR_SKBD'
-        ])->where('is_active', true)->orderBy('sort_order')->get();
+        $coverLetters = MarriageDocumentType::whereIn('code', MarriageApplicationLetterService::COVER_CODES)
+            ->where('is_active', true)->orderBy('sort_order')->get();
 
         return view('user.marriage_applications.show', compact('application', 'requiredAnggota', 'requiredPasangan', 'coverLetters'));
+    }
+    // ─── documents ───────────────────────────────────────
+    public function documents($id)
+    {
+        $application = Auth::user()
+            ->marriageApplications()
+            ->with(['partner', 'documents'])
+            ->findOrFail($id);
+
+        $allowedStatuses = [
+            MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
+            MarriageApplication::STATUS_PERLU_PERBAIKAN,
+            MarriageApplication::STATUS_DIVERIFIKASI,
+            MarriageApplication::STATUS_DISETUJUI,
+            MarriageApplication::STATUS_SELESAI
+        ];
+
+        if (!in_array($application->status, $allowedStatuses)) {
+            return redirect()->route('user.pengajuan_nikah.show', $id)
+                ->with('error', 'Dokumen persyaratan dapat diakses setelah Permohonan Izin Nikah disetujui.');
+        }
+
+        $docTypes = MarriageDocumentType::where(function ($q) {
+                $q->whereNotIn('category', ['SURAT_SATUAN', 'SURAT_FINAL'])
+                  ->orWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
+            })
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        $requiredAnggota = $docTypes->filter(fn($dt) => $dt->owner_type === 'ANGGOTA' || $dt->owner_type === 'ORANG_TUA_ANGGOTA');
+
+        $requiredPasangan = $docTypes->filter(function($dt) use ($application) {
+            if ($dt->owner_type !== 'PASANGAN' && $dt->owner_type !== 'ORANG_TUA_PASANGAN') {
+                return false;
+            }
+            if ($dt->code === 'SURAT_KETERANGAN_DINAS_CALON_PASANGAN') {
+                return $application->partner && $application->partner->status_pekerjaan === 'ASN';
+            }
+            if ($dt->code === 'DOKUMEN_LAIN_CALON_PASANGAN') {
+                return false;
+            }
+            return true;
+        });
+
+        return view('user.marriage_applications.documents', compact('application', 'requiredAnggota', 'requiredPasangan'));
     }
 
     // ─── uploadDocument ──────────────────────────────────
@@ -349,7 +618,7 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
 
-        if (!in_array($application->status, [MarriageApplication::STATUS_DRAFT, MarriageApplication::STATUS_DIAJUKAN, MarriageApplication::STATUS_PERLU_PERBAIKAN])) {
+        if (!in_array($application->status, [MarriageApplication::STATUS_DRAFT, MarriageApplication::STATUS_DITOLAK, MarriageApplication::STATUS_DIAJUKAN, MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, MarriageApplication::STATUS_PERLU_PERBAIKAN])) {
             return redirect()->back()->with('error', 'Dokumen tidak dapat diunggah pada status ' . $application->status . '.');
         }
 
@@ -363,24 +632,27 @@ class MarriageApplicationController extends Controller
         $docType = MarriageDocumentType::findOrFail($request->marriage_document_type_id);
         $document = $application->documents()->where('marriage_document_type_id', $docType->id)->first();
 
-        // Delete old file if exists physically (do this before storing the new one in case name overlaps)
-        if ($document && Storage::disk('private')->exists($document->file_path)) {
-            Storage::disk('private')->delete($document->file_path);
+        if ($document && $document->status_verifikasi === 'DITERIMA') {
+            return redirect()->back()->with('error', 'Dokumen yang sudah DITERIMA tidak dapat diubah.');
         }
 
         $file    = $request->file('file');
-        
+
         // [Application_ID]_[Timestamp]_[Safe_Document_Code].[Extension]
         $safeCode = preg_replace('/[^A-Za-z0-9_.\-]/', '_', $docType->code);
         $fileName = $application->id . '_' . now()->timestamp . '_' . $safeCode . '.' . $file->getClientOriginalExtension();
         $filePath = $file->storeAs('marriage_documents/' . $application->id, $fileName, 'private');
 
-        if ($document) {
-            // Check if document is already accepted
-            if ($document->status_verifikasi === 'DITERIMA') {
-                return redirect()->back()->with('error', 'Dokumen yang sudah DITERIMA tidak dapat diubah.');
-            }
+        if (!$filePath) {
+            return redirect()->back()->with('error', 'Gagal menyimpan file.');
+        }
 
+        // Delete old file if exists physically (do this AFTER saving new file)
+        if ($document && Storage::disk('private')->exists($document->file_path)) {
+            Storage::disk('private')->delete($document->file_path);
+        }
+
+        if ($document) {
             // Keep old record — store revision as updated record
             $document->update([
                 'file_path'          => $filePath,
@@ -429,11 +701,11 @@ class MarriageApplicationController extends Controller
     public function generateLetter(Request $request, $id, MarriageLetterGenerator $generator)
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
-        
+
         $request->validate([
             'type_code' => 'required|string'
         ]);
-        
+
         $typeCode = $request->type_code;
 
         $allowedStatusesForLetter = [
@@ -447,6 +719,7 @@ class MarriageApplicationController extends Controller
         if ($typeCode === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
             $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
             $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DITOLAK;
         }
 
         if ($typeCode === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
@@ -456,24 +729,24 @@ class MarriageApplicationController extends Controller
         if ($typeCode !== 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, $allowedStatusesForLetter)) {
             return redirect()->back()->with('error', 'Surat pengantar hanya dapat digenerate setelah pengajuan awal disetujui Admin.');
         }
-        
+
         $documentType = MarriageDocumentType::where('code', $typeCode)->firstOrFail();
-        
+
         if (!$documentType->template_path) {
             return redirect()->back()->with('error', 'Template untuk surat ini belum tersedia.');
         }
 
         $templateAbsolutePath = storage_path('app/' . $documentType->template_path);
-        
+
         if (!file_exists($templateAbsolutePath)) {
             return redirect()->back()->with('error', 'File template fisik tidak ditemukan: ' . $documentType->template_path);
         }
 
         $outputName = strtolower($typeCode) . '_' . $application->id;
-        
+
         try {
             $filePath = $generator->generate($application, $templateAbsolutePath, $outputName);
-            
+
             MarriageLetter::updateOrCreate(
                 [
                     'marriage_application_id' => $application->id,
@@ -486,9 +759,9 @@ class MarriageApplicationController extends Controller
                     'generated_by'   => Auth::id(),
                 ]
             );
-            
+
             return redirect()->back()->with('success', 'Surat ' . $documentType->name . ' berhasil di-generate.');
-            
+
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal generate surat: ' . $e->getMessage());
         }
@@ -499,7 +772,7 @@ class MarriageApplicationController extends Controller
     {
         $application = Auth::user()->marriageApplications()->findOrFail($id);
         $letter      = $application->letters()->findOrFail($letterId);
-        
+
         $allowedStatusesForLetter = [
             MarriageApplication::STATUS_PENGAJUAN_DISETUJUI,
             MarriageApplication::STATUS_PERLU_PERBAIKAN,
@@ -511,6 +784,7 @@ class MarriageApplicationController extends Controller
         if ($letter->jenis_surat === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
             $allowedStatusesForLetter[] = MarriageApplication::STATUS_DRAFT;
             $allowedStatusesForLetter[] = MarriageApplication::STATUS_DIAJUKAN;
+            $allowedStatusesForLetter[] = MarriageApplication::STATUS_DITOLAK;
         }
 
         if ($letter->jenis_surat === 'SURAT_IZIN_NIKAH_FINAL' && !in_array($application->status, [MarriageApplication::STATUS_DISETUJUI, MarriageApplication::STATUS_SELESAI])) {
@@ -524,7 +798,7 @@ class MarriageApplicationController extends Controller
         if (!Storage::disk('private')->exists($letter->file_generated)) {
             abort(404, 'File surat tidak ditemukan.');
         }
-        
+
         $fileName = basename($letter->file_generated);
         return Storage::disk('private')->download($letter->file_generated, $fileName);
     }

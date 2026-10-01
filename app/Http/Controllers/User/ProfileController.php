@@ -15,7 +15,19 @@ class ProfileController extends Controller
         $user = Auth::user();
         $personel = $user->personel;
 
-        return view('user.profile', compact('user', 'personel'));
+        $structureService = app(\App\Services\OrganizationStructureService::class);
+        $supervisor = $structureService->getSupervisorForPersonel($personel);
+
+        $officials = \App\Models\OrganizationOfficialAssignment::where('is_active', true)
+            ->with(['personel', 'unit'])
+            ->get()
+            ->sortBy(function($o) { return $o->unit ? $o->unit->sort_order : 999; });
+
+        $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+            ->where('is_active', true)
+            ->exists();
+
+        return view('user.profile', compact('user', 'personel', 'supervisor', 'officials', 'isPejabat'));
     }
 
     public function update(Request $request)
@@ -23,33 +35,44 @@ class ProfileController extends Controller
         $user = Auth::user();
         $personel = $user->personel;
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'jenis_kelamin' => 'required|string|in:Pria,Wanita',
-            'kategori_personel' => 'required|string|in:Perwira Menengah,Perwira Pertama,Bintara,Tamtama,PNS',
-            'pangkat_golongan' => 'required|string|max:100',
-            'jabatan' => 'required|string|max:150',
-            'satuan_bagian' => 'required|string|max:150',
+        $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+            ->where('is_active', true)
+            ->exists();
+
+        $rules = [
             'no_hp' => 'required|string|max:20',
             'password' => 'nullable|string|min:6|confirmed',
-        ]);
+        ];
 
-        $user->name = $request->name;
+        if (!$isPejabat) {
+            $rules['organization_unit_id'] = 'required|exists:organization_units,id';
+        }
+
+        $request->validate($rules);
+
+        if (!$isPejabat) {
+            $validUnit = \App\Models\OrganizationOfficialAssignment::where('organization_unit_id', $request->organization_unit_id)
+                ->where('is_active', true)
+                ->exists();
+
+            if (!$validUnit) {
+                return back()->withInput()->withErrors([
+                    'organization_unit_id' => 'Pilihan Atasan Langsung tidak valid atau pejabat tidak aktif.',
+                ]);
+            }
+        }
+
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
+            $user->save();
         }
-        $user->save();
 
         if ($personel) {
-            $personel->update([
-                'nama' => $request->name,
-                'jenis_kelamin' => $request->jenis_kelamin,
-                'kategori_personel' => $request->kategori_personel,
-                'pangkat_golongan' => $request->pangkat_golongan,
-                'jabatan' => $request->jabatan,
-                'satuan_bagian' => $request->satuan_bagian,
-                'no_hp' => $request->no_hp,
-            ]);
+            $updateData = ['no_hp' => $request->no_hp];
+            if (!$isPejabat) {
+                $updateData['organization_unit_id'] = $request->organization_unit_id;
+            }
+            $personel->update($updateData);
         }
 
         return redirect()->route('user.profile')

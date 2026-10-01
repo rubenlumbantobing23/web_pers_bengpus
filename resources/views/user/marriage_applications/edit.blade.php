@@ -1,0 +1,331 @@
+@extends('layouts.user')
+
+@section('page-title', 'Formulir Pengajuan Nikah')
+
+@section('user-content')
+<div style="max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px;">
+
+    {{-- Header --}}
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="font-size: 1.4rem; color: #fff; font-weight: 700;">Formulir Edit Pengajuan Nikah</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">
+                Anda mengajukan izin nikah sebagai calon <strong style="color: var(--primary);">{{ strtolower($peranAnggota) }}</strong>, dan pasangan akan diperlakukan sebagai calon <strong style="color: var(--primary);">{{ strtolower($peranPasangan) }}</strong>.
+            </p>
+        </div>
+        <a href="{{ route('user.pengajuan_nikah.index') }}" class="btn-military" style="background: rgba(255,255,255,0.08);">
+            <i class="fa-solid fa-arrow-left"></i> Kembali
+        </a>
+    </div>
+
+    {{-- Validation Errors --}}
+    @if($errors->any())
+    <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); padding: 14px 18px; border-radius: 10px; color: #fca5a5;">
+        <div style="font-weight: 700; margin-bottom: 8px;"><i class="fa-solid fa-circle-exclamation"></i> Terdapat kesalahan input:</div>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
+    <form action="{{ route('user.pengajuan_nikah.update', $application->id) }}" method="POST" id="form-nikah">
+    @csrf
+    @method('PUT')
+
+    {{-- ═══ SECTION 1: DATA ANGGOTA (READONLY) ═══════════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #059669, #047857); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">1</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Anggota (Otomatis dari Nominatif)</h3>
+        </div>
+        <div style="background: rgba(5,150,105,0.05); border: 1px solid rgba(5,150,105,0.15); border-radius: 8px; padding: 14px; margin-bottom: 12px; font-size: 0.85rem; color: #6ee7b7;">
+            <i class="fa-solid fa-circle-info"></i> Data di bawah ini diambil secara otomatis dari data nominatif personel Anda dan tidak dapat diubah melalui halaman ini.
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+            @php
+                $fields = [
+                    'Nama Lengkap'       => $personel->nama,
+                    'NRP / NIP'          => $personel->nrp_nip,
+                    'Pangkat / Golongan' => $personel->pangkat_golongan,
+                    'Jabatan'            => $personel->jabatan,
+                    'Satuan / Bagian'    => $personel->satuan_bagian,
+                    'Corps'              => $personel->corps ?: '-',
+                    'Agama'              => $personel->agama ?: '-',
+                    'Suku'               => $personel->suku ?: '-',
+                    'Tempat Lahir'       => $personel->tempat_lahir ?: '-',
+                    'Tanggal Lahir'      => $personel->tgl_lahir ? $personel->tgl_lahir->format('d M Y') : '-',
+                    'Jenis Kelamin'      => $personel->jenis_kelamin,
+                    'Peran dalam Nikah'  => $peranAnggota,
+                ];
+            @endphp
+            @foreach($fields as $label => $value)
+            <div>
+                <label style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">{{ $label }}</label>
+                <div style="margin-top: 4px; padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; color: #e2e8f0; font-size: 0.9rem;">{{ $value ?: '-' }}</div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 2: DATA RENCANA PERNIKAHAN ════════════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #5b21b6); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">2</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Rencana Pernikahan</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Tanggal Rencana Nikah <span class="text-danger">*</span></label>
+                <input type="date" name="tanggal_rencana_nikah" class="form-control" value="{{ old('tanggal_rencana_nikah') ?? ($application->tanggal_rencana_nikah ? $application->tanggal_rencana_nikah->format('Y-m-d') : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Tempat Pelaksanaan (Gedung / KUA / Rumah) <span class="text-danger">*</span></label>
+                <input type="text" name="tempat_nikah" class="form-control" value="{{ old('tempat_nikah') ?? $application->tempat_nikah }}" placeholder="Contoh: KUA Kecamatan Cicendo" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Alamat Lengkap Tempat Pelaksanaan <span class="text-danger">*</span></label>
+                <textarea name="alamat_nikah" class="form-control" rows="2" required>{{ old('alamat_nikah') ?? $application->alamat_nikah }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Kelurahan / Desa <span class="text-danger">*</span></label>
+                <input type="text" name="kelurahan_nikah" class="form-control" value="{{ old('kelurahan_nikah') ?? $application->kelurahan_nikah }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kecamatan <span class="text-danger">*</span></label>
+                <input type="text" name="kecamatan_nikah" class="form-control" value="{{ old('kecamatan_nikah') ?? $application->kecamatan_nikah }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kabupaten / Kota <span class="text-danger">*</span></label>
+                <input type="text" name="kabupaten_nikah" class="form-control" value="{{ old('kabupaten_nikah') ?? $application->kabupaten_nikah }}" required>
+            </div>
+            <div class="form-group">
+                <label>Provinsi <span class="text-danger">*</span></label>
+                <input type="text" name="provinsi_nikah" class="form-control" value="{{ old('provinsi_nikah') ?? $application->provinsi_nikah }}" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 3: DATA DOMISILI ANGGOTA & KUA TUJUAN ════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #1d4ed8); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">3</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Domisili Anggota & KUA Tujuan</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Alamat Domisili Anggota <span class="text-danger">*</span></label>
+                <textarea name="alamat_domisili" class="form-control" rows="2" required>{{ old('alamat_domisili') ?? $application->alamat_domisili }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Kelurahan / Desa Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kelurahan_domisili" class="form-control" value="{{ old('kelurahan_domisili') ?? $application->kelurahan_domisili }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kecamatan Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kecamatan_domisili" class="form-control" value="{{ old('kecamatan_domisili') ?? $application->kecamatan_domisili }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kabupaten / Kota Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="kabupaten_domisili" class="form-control" value="{{ old('kabupaten_domisili') ?? $application->kabupaten_domisili }}" required>
+            </div>
+            <div class="form-group">
+                <label>Provinsi Domisili <span class="text-danger">*</span></label>
+                <input type="text" name="provinsi_domisili" class="form-control" value="{{ old('provinsi_domisili') ?? $application->provinsi_domisili }}" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Nama KUA Tujuan (Untuk Pengantar NA) <span class="text-danger">*</span></label>
+                <input type="text" name="kua_tujuan" class="form-control" value="{{ old('kua_tujuan') ?? $application->kua_tujuan }}" placeholder="Contoh: KUA Kecamatan Cicendo" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 3B: DATA ORANG TUA / WALI ANGGOTA ═════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">3B</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Orang Tua / Wali Anggota</h3>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #60a5fa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person"></i> Data Bapak / Wali
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div class="form-group">
+                <label>Nama Bapak / Wali <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_nama" class="form-control" value="{{ old('bapak_anggota_nama') ?? $application->bapak_anggota_nama }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_agama" class="form-control" value="{{ old('bapak_anggota_agama') ?? $application->bapak_anggota_agama }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_pekerjaan" class="form-control" value="{{ old('bapak_anggota_pekerjaan') ?? $application->bapak_anggota_pekerjaan }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_anggota_alamat" class="form-control" value="{{ old('bapak_anggota_alamat') ?? $application->bapak_anggota_alamat }}" required>
+            </div>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #f472b6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person-dress"></i> Data Ibu
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Nama Ibu <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_nama" class="form-control" value="{{ old('ibu_anggota_nama') ?? $application->ibu_anggota_nama }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_agama" class="form-control" value="{{ old('ibu_anggota_agama') ?? $application->ibu_anggota_agama }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_pekerjaan" class="form-control" value="{{ old('ibu_anggota_pekerjaan') ?? $application->ibu_anggota_pekerjaan }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_anggota_alamat" class="form-control" value="{{ old('ibu_anggota_alamat') ?? $application->ibu_anggota_alamat }}" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 4: DATA CALON PASANGAN ════════════════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #db2777, #9d174d); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">4</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data {{ $peranPasangan }}</h3>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Nama Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_nama" class="form-control" value="{{ old('pasangan_nama') ?? ($application->partner ? $application->partner->nama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Status Pernikahan <span class="text-danger">*</span></label>
+                <select name="pasangan_status_pernikahan" class="form-control" required>
+                    <option value="">-- Pilih Status --</option>
+                    @if(strtolower($peranAnggota) === 'suami')
+                        <option value="Gadis" {{ (old('pasangan_status_pernikahan') ?? ($application->partner ? $application->partner->status_pernikahan : '')) == 'Gadis' ? 'selected' : '' }}>Gadis</option>
+                        <option value="Janda" {{ (old('pasangan_status_pernikahan') ?? ($application->partner ? $application->partner->status_pernikahan : '')) == 'Janda' ? 'selected' : '' }}>Janda</option>
+                    @else
+                        <option value="Jejaka" {{ (old('pasangan_status_pernikahan') ?? ($application->partner ? $application->partner->status_pernikahan : '')) == 'Jejaka' ? 'selected' : '' }}>Jejaka</option>
+                        <option value="Duda" {{ (old('pasangan_status_pernikahan') ?? ($application->partner ? $application->partner->status_pernikahan : '')) == 'Duda' ? 'selected' : '' }}>Duda</option>
+                    @endif
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_agama" class="form-control" value="{{ old('pasangan_agama') ?? ($application->partner ? $application->partner->agama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Tempat Lahir <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_tempat_lahir" class="form-control" value="{{ old('pasangan_tempat_lahir') ?? ($application->partner ? $application->partner->tempat_lahir : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Tanggal Lahir <span class="text-danger">*</span></label>
+                <input type="date" name="pasangan_tanggal_lahir" class="form-control" value="{{ old('pasangan_tanggal_lahir') ?? ($application->partner && $application->partner->tanggal_lahir ? $application->partner->tanggal_lahir->format('Y-m-d') : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Suku Bangsa <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_suku" class="form-control" value="{{ old('pasangan_suku') ?? ($application->partner ? $application->partner->suku : '') }}" required>
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Pekerjaan (Deskripsi Lengkap) <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_pekerjaan" class="form-control" value="{{ old('pasangan_pekerjaan') ?? ($application->partner ? $application->partner->pekerjaan : '') }}" placeholder="Contoh: Hakim, Karyawan Swasta, Wiraswasta, PNS Guru, dll" required>
+            </div>
+
+            <div class="form-group" style="grid-column: 1 / -1;">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <textarea name="pasangan_alamat" class="form-control" rows="2" required>{{ old('pasangan_alamat') ?? ($application->partner ? $application->partner->alamat : '') }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Kelurahan / Desa <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_kelurahan" class="form-control" value="{{ old('pasangan_kelurahan') ?? ($application->partner ? $application->partner->kelurahan : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kecamatan <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_kecamatan" class="form-control" value="{{ old('pasangan_kecamatan') ?? ($application->partner ? $application->partner->kecamatan : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Kabupaten / Kota <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_kabupaten" class="form-control" value="{{ old('pasangan_kabupaten') ?? ($application->partner ? $application->partner->kabupaten : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Provinsi <span class="text-danger">*</span></label>
+                <input type="text" name="pasangan_provinsi" class="form-control" value="{{ old('pasangan_provinsi') ?? ($application->partner ? $application->partner->provinsi : '') }}" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══ SECTION 5: DATA ORANG TUA / WALI PASANGAN ═════════════════════ --}}
+    <div class="glass-card" style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #d97706, #b45309); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 0.85rem;">5</div>
+            <h3 style="font-size: 1.05rem; color: var(--accent-gold); font-weight: 700;">Data Orang Tua / Wali {{ $peranPasangan }}</h3>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #60a5fa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person"></i> Data Bapak / Wali
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+            <div class="form-group">
+                <label>Nama Bapak / Wali <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_nama" class="form-control" value="{{ old('bapak_nama') ?? ($application->partner ? $application->partner->bapak_nama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_agama" class="form-control" value="{{ old('bapak_agama') ?? ($application->partner ? $application->partner->bapak_agama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_pekerjaan" class="form-control" value="{{ old('bapak_pekerjaan') ?? ($application->partner ? $application->partner->bapak_pekerjaan : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="bapak_alamat" class="form-control" value="{{ old('bapak_alamat') ?? ($application->partner ? $application->partner->bapak_alamat : '') }}" required>
+            </div>
+        </div>
+
+        <p style="font-size: 0.85rem; font-weight: 700; color: #f472b6; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            <i class="fa-solid fa-person-dress"></i> Data Ibu
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+                <label>Nama Ibu <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_nama" class="form-control" value="{{ old('ibu_nama') ?? ($application->partner ? $application->partner->ibu_nama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Agama <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_agama" class="form-control" value="{{ old('ibu_agama') ?? ($application->partner ? $application->partner->ibu_agama : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Pekerjaan <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_pekerjaan" class="form-control" value="{{ old('ibu_pekerjaan') ?? ($application->partner ? $application->partner->ibu_pekerjaan : '') }}" required>
+            </div>
+            <div class="form-group">
+                <label>Alamat Lengkap <span class="text-danger">*</span></label>
+                <input type="text" name="ibu_alamat" class="form-control" value="{{ old('ibu_alamat') ?? ($application->partner ? $application->partner->ibu_alamat : '') }}" required>
+            </div>
+        </div>
+    </div>
+
+    {{-- Submit Buttons --}}
+    <div style="display: flex; justify-content: flex-end; gap: 12px; padding: 20px 0;">
+        <a href="{{ route('user.pengajuan_nikah.show', $application->id) }}" class="btn-military" style="background: rgba(255,255,255,0.08);">
+            <i class="fa-solid fa-xmark"></i> Batal
+        </a>
+        <button type="submit" class="btn-military">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+        </button>
+    </div>
+
+    </form>
+
+</div>
+
+
+@endsection

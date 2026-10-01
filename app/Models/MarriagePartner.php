@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class MarriagePartner extends Model
 {
     protected $fillable = [
-        'marriage_application_id', 'peran', 'nama', 'tempat_lahir', 'tanggal_lahir',
+        'marriage_application_id', 'peran', 'status_pernikahan', 'nama', 'tempat_lahir', 'tanggal_lahir',
         'pekerjaan', 'status_pekerjaan', 'instansi', 'jabatan', 'agama', 'suku',
         'alamat', 'kelurahan', 'kecamatan', 'kabupaten', 'provinsi',
         'bapak_nama', 'bapak_agama', 'bapak_pekerjaan', 'bapak_alamat',

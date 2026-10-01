@@ -55,7 +55,7 @@
             </div>
 
             @if($leaveRequest->status === 'pending')
-                <form action="{{ route('user.leave.cancel', $leaveRequest->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan pengajuan cuti ini?')">
+                <form action="{{ route('user.leave.cancel', $leaveRequest->id) }}" method="POST" data-confirm="Pengajuan cuti ini akan dibatalkan." data-confirm-title="Batalkan pengajuan cuti?" data-confirm-button="Ya, batalkan">
                     @csrf
                     <button type="submit" class="btn-danger">
                         <i class="fa-solid fa-ban"></i> Batalkan Pengajuan

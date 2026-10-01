@@ -74,7 +74,7 @@
                                 </td>
                                 <td>{{ $h->year }}</td>
                                 <td>
-                                    <form action="{{ route('admin.holidays.destroy', $h->id) }}" method="POST" onsubmit="return confirm('Hapus tanggal libur ini?')">
+                                    <form action="{{ route('admin.holidays.destroy', $h->id) }}" method="POST" data-confirm="Tanggal libur ini akan dihapus." data-confirm-title="Hapus tanggal libur?" data-confirm-button="Ya, hapus">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn-danger" style="padding: 6px 12px; font-size: 0.8rem;">

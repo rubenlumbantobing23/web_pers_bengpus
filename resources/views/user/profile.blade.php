@@ -30,50 +30,62 @@
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
                 <div class="form-group" style="grid-column: span 2;">
-                    <label class="form-label" for="name">Nama Lengkap</label>
-                    <input type="text" id="name" name="name" class="form-control" value="{{ old('name', $user->name) }}" required>
+                    <label class="form-label">Nama Lengkap</label>
+                    <input type="text" class="form-control" value="{{ $user->name }}" disabled style="opacity: 0.6; cursor: not-allowed;">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="nrp_nip">NRP / NIP (Tetap)</label>
+                    <label class="form-label">NRP / NIP</label>
                     <input type="text" class="form-control" value="{{ $personel->nrp_nip ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin *</label>
-                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
-                        <option value="">-- Pilih Jenis Kelamin --</option>
-                        <option value="Pria" {{ old('jenis_kelamin', $personel->jenis_kelamin ?? '') === 'Pria' ? 'selected' : '' }}>Pria</option>
-                        <option value="Wanita" {{ old('jenis_kelamin', $personel->jenis_kelamin ?? '') === 'Wanita' ? 'selected' : '' }}>Wanita</option>
+                    <label class="form-label">Jenis Kelamin</label>
+                    <input type="text" class="form-control" value="{{ $personel->jenis_kelamin ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Pangkat / Golongan</label>
+                    <input type="text" class="form-control" value="{{ $personel->pangkat_golongan ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Kategori Personel</label>
+                    <input type="text" class="form-control" value="{{ $personel->kategori_personel ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Jabatan</label>
+                    <input type="text" class="form-control" value="{{ $personel->jabatan ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Satuan / Bagian</label>
+                    <input type="text" class="form-control" value="{{ $personel->satuan_bagian ?? 'Bengpuskomlekad' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group" style="grid-column: span 2; margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+                    <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">Data yang Dapat Diubah</h4>
+                </div>
+
+                @if(!$isPejabat)
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label" for="organization_unit_id">Atasan Langsung *</label>
+                    <select id="organization_unit_id" name="organization_unit_id" class="form-control" required style="appearance: none; padding-right: 30px;">
+                        <option value="">-- Pilih Atasan Langsung --</option>
+                        @foreach($officials as $official)
+                            <option value="{{ $official->organization_unit_id }}" {{ old('organization_unit_id', $personel->organization_unit_id) == $official->organization_unit_id ? 'selected' : '' }}>
+                                {{ strtoupper($official->roleLabel) }} — {{ $official->personel ? $official->personel->nama : 'Belum Ada Pejabat' }}
+                            </option>
+                        @endforeach
                     </select>
+                    @if($supervisor)
+                        <small style="color: #34d399; display: block; margin-top: 8px; font-size: 0.8rem;">
+                            <i class="fa-solid fa-circle-check"></i> Atasan Anda saat ini: <strong>{{ $supervisor->nama }}</strong> ({{ $supervisor->jabatan }})
+                        </small>
+                    @endif
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="pangkat_golongan">Pangkat / Golongan</label>
-                    <input type="text" id="pangkat_golongan" name="pangkat_golongan" class="form-control" value="{{ old('pangkat_golongan', $personel->pangkat_golongan ?? '') }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="kategori_personel">Kategori Pemohon *</label>
-                    <select id="kategori_personel" name="kategori_personel" class="form-control" required>
-                        <option value="">-- Pilih Kategori --</option>
-                        <option value="Perwira Menengah" {{ old('kategori_personel', $personel->kategori_personel ?? '') === 'Perwira Menengah' ? 'selected' : '' }}>Perwira Menengah</option>
-                        <option value="Perwira Pertama" {{ old('kategori_personel', $personel->kategori_personel ?? '') === 'Perwira Pertama' ? 'selected' : '' }}>Perwira Pertama</option>
-                        <option value="Bintara" {{ old('kategori_personel', $personel->kategori_personel ?? '') === 'Bintara' ? 'selected' : '' }}>Bintara</option>
-                        <option value="Tamtama" {{ old('kategori_personel', $personel->kategori_personel ?? '') === 'Tamtama' ? 'selected' : '' }}>Tamtama</option>
-                        <option value="PNS" {{ old('kategori_personel', $personel->kategori_personel ?? '') === 'PNS' ? 'selected' : '' }}>PNS</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="jabatan">Jabatan</label>
-                    <input type="text" id="jabatan" name="jabatan" class="form-control" value="{{ old('jabatan', $personel->jabatan ?? '') }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="satuan_bagian">Satuan / Bagian</label>
-                    <input type="text" id="satuan_bagian" name="satuan_bagian" class="form-control" value="{{ old('satuan_bagian', $personel->satuan_bagian ?? 'Bengpuskomlekad') }}" required>
-                </div>
+                @endif
 
                 <div class="form-group">
                     <label class="form-label" for="no_hp">Nomor Telepon / WA</label>

@@ -21,7 +21,9 @@ class MarriageApplication extends Model
         'kelurahan_nikah', 'kecamatan_nikah', 'kabupaten_nikah', 'provinsi_nikah',
         'status', 'catatan_admin',
         'alamat_domisili', 'kelurahan_domisili', 'kecamatan_domisili',
-        'kabupaten_domisili', 'provinsi_domisili', 'kua_tujuan'
+        'kabupaten_domisili', 'provinsi_domisili', 'kua_tujuan',
+        'bapak_anggota_nama', 'bapak_anggota_agama', 'bapak_anggota_pekerjaan', 'bapak_anggota_alamat',
+        'ibu_anggota_nama', 'ibu_anggota_agama', 'ibu_anggota_pekerjaan', 'ibu_anggota_alamat'
     ];
 
     public function isLocked(): bool

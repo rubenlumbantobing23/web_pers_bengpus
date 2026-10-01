@@ -239,6 +239,30 @@
                                 placeholder="Misal: Disetujui sebagian karena kebutuhan dinas...">
                         </div>
                     </div>
+
+                    @php
+                        $kategori = $leaveRequest->user->personel ? $leaveRequest->user->personel->kategori_personel : '';
+                        $isPerwira = in_array($kategori, ['Perwira Menengah', 'Perwira Pertama']);
+                    @endphp
+                    @if($isPerwira)
+                    <div style="margin-top: 16px;">
+                        <label class="form-label" style="color: #34d399;">
+                            <i class="fa-solid fa-signature"></i> Pejabat Penandatangan Surat (Wajib)
+                        </label>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff;">
+                                <input type="radio" name="signing_option" value="kabeng" {{ old('signing_option') === 'kabeng' ? 'checked' : '' }}>
+                                Kabeng
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff;">
+                                <input type="radio" name="signing_option" value="waka_an_kabeng" {{ old('signing_option') === 'waka_an_kabeng' ? 'checked' : '' }}>
+                                Wakabeng a.n. Kabeng
+                            </label>
+                        </div>
+                    </div>
+                    @else
+                    <input type="hidden" name="signing_option" value="wakabeng">
+                    @endif
                 </div>
             </div>
 
@@ -259,8 +283,6 @@
     @if($leaveRequest->status === 'approved')
     @php
         $isIssued = \App\Models\LeaveOfficialLetter::where('leave_request_id', $leaveRequest->id)->exists();
-        $kategori = $leaveRequest->user->personel ? $leaveRequest->user->personel->kategori_personel : '';
-        $isPerwira = in_array($kategori, ['Perwira Menengah', 'Perwira Pertama']);
     @endphp
     
     <div class="glass-card" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(19, 27, 46, 0.95); margin-top: 24px;">
@@ -276,42 +298,10 @@
                 </a>
             </div>
         @else
-            <form action="{{ route('admin.leave.issue_letter', $leaveRequest->id) }}" method="POST">
-                @csrf
-                <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">Pilih pejabat penandatangan untuk Surat Cuti Resmi ini.</p>
-                    
-                    @if($isPerwira)
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">Pilih Penandatangan (Untuk Perwira):</label>
-                            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff;">
-                                    <input type="radio" name="signing_option" value="kabeng" required>
-                                    Kabeng
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff;">
-                                    <input type="radio" name="signing_option" value="waka_an_kabeng" required>
-                                    Wakabeng a.n. Kabeng
-                                </label>
-                            </div>
-                        </div>
-                    @else
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">Penandatangan (Untuk Non-Perwira):</label>
-                            <div style="padding: 10px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; color: #fff; display: inline-block;">
-                                Wakabeng
-                                <input type="hidden" name="signing_option" value="wakabeng">
-                            </div>
-                        </div>
-                    @endif
-                </div>
-
-                <div style="display: flex; justify-content: flex-end;">
-                    <button type="submit" class="btn-military" style="background: #10b981; border: none; padding: 12px 24px;">
-                        <i class="fa-solid fa-file-export"></i> Terbitkan Surat Cuti
-                    </button>
-                </div>
-            </form>
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 16px; text-align: center;">
+                <p style="color: #fbbf24; font-weight: 600; margin-bottom: 12px;">Surat Cuti Resmi gagal diterbitkan secara otomatis.</p>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Silakan periksa konfigurasi struktur organisasi atau hubungi administrator.</p>
+            </div>
         @endif
     </div>
     @endif

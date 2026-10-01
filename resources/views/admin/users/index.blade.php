@@ -85,6 +85,7 @@
                             <th>Nama / Email</th>
                             <th>NRP / NIP</th>
                             <th>Status Relasi</th>
+                            <th>Status Akun</th>
                             <th>Jabatan</th>
                             <th>Terdaftar</th>
                             <th>Cuti</th>
@@ -114,6 +115,17 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td>
+                                    @if($u->personel->status_aktif)
+                                        <span style="display: inline-flex; align-items: center; gap: 4px; background: rgba(52,211,153,0.12); color: #34d399; border: 1px solid rgba(52,211,153,0.3); border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; font-weight: 700;">
+                                            <i class="fa-solid fa-check"></i> AKTIF
+                                        </span>
+                                    @else
+                                        <span style="display: inline-flex; align-items: center; gap: 4px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 2px 7px; font-size: 0.72rem; font-weight: 700;">
+                                            <i class="fa-solid fa-ban"></i> NONAKTIF
+                                        </span>
+                                    @endif
+                                </td>
                                 <td style="font-size: 0.875rem;">{{ $u->personel->jabatan ?? '—' }}</td>
                                 <td style="font-size: 0.8rem; color: var(--text-muted);">
                                     {{ $u->created_at->format('d M Y') }}
@@ -128,6 +140,12 @@
                                         <a href="{{ route('admin.users.show', $u->id) }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">
                                             <i class="fa-solid fa-eye"></i> Detail
                                         </a>
+                                        <form action="{{ route('admin.users.toggle_status', $u->id) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; {{ $u->personel->status_aktif ? 'color:#f87171; border-color:rgba(248,113,113,0.3); background:rgba(239,68,68,0.1);' : 'color:#34d399; border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.1);' }}" title="{{ $u->personel->status_aktif ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}">
+                                                <i class="fa-solid {{ $u->personel->status_aktif ? 'fa-ban' : 'fa-check' }}"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

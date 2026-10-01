@@ -58,7 +58,7 @@
     <!-- Main Form Container -->
     <form action="{{ route('user.leave.store') }}" method="POST" enctype="multipart/form-data" id="leaveForm">
         @csrf
-        
+
         <!-- ==================== STEP 1: PILIH JENIS CUTI ==================== -->
         <div id="step-1" class="form-step active">
             <div class="glass-card">
@@ -302,7 +302,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="supporting_documents">Upload Persuratan Pendukung (Jika Ada / Disyaratkan)</label>
+                    <label class="form-label" id="supporting_documents_label" for="supporting_documents">Upload Persuratan Pendukung (Jika Ada / Disyaratkan)</label>
                     <input type="file" id="supporting_documents" name="supporting_documents[]" class="form-control" multiple accept=".pdf,.jpg,.jpeg,.png">
                     <small style="color: var(--text-muted); display: block; margin-top: 6px;">Unggah lampiran pendukung seperti Surat Keterangan Dokter, Undangan Nikah, dll. Bisa pilih lebih dari satu file. Format: PDF, JPG, PNG (Maksimal 5MB per file).</small>
                 </div>
@@ -643,6 +643,16 @@
         document.getElementById('terms-docs').innerText = typeObj.required_documents_info || 'Tidak ada dokumen khusus.';
         document.getElementById('summary-leave-name').innerText = typeObj.name;
 
+        const suppDocInput = document.getElementById('supporting_documents');
+        const suppDocLabel = document.getElementById('supporting_documents_label');
+        if (typeObj.code !== 'CT_TAHUNAN' && typeObj.required_documents_info && typeObj.required_documents_info.trim() !== '') {
+            suppDocInput.required = true;
+            suppDocLabel.innerHTML = 'Upload Persuratan Pendukung *';
+        } else {
+            suppDocInput.required = false;
+            suppDocLabel.innerHTML = 'Upload Persuratan Pendukung (Jika Ada / Disyaratkan)';
+        }
+
         document.getElementById('btn-to-step-2').disabled = false;
     }
 
@@ -753,13 +763,13 @@
 
         // Validasi Langkah 1: Harus memilih jenis cuti
         if (stepNum >= 2 && !selectedLeaveTypeObj) {
-            alert('Silakan pilih jenis cuti terlebih dahulu pada Langkah 1.');
+            showNotice('Silakan pilih jenis cuti terlebih dahulu pada Langkah 1.');
             return;
         }
 
         // Validasi Langkah 2: Harus menyetujui syarat & ketentuan
         if (stepNum >= 3 && !document.getElementById('terms_accepted').checked) {
-            alert('Anda harus menyetujui syarat & ketentuan permohonan cuti pada Langkah 2.');
+            showNotice('Anda harus menyetujui syarat & ketentuan permohonan cuti pada Langkah 2.');
             return;
         }
 
@@ -769,12 +779,12 @@
             const endDate = document.getElementById('end_date').value;
             
             if (!startDate || !endDate) {
-                alert('Silakan pilih tanggal mulai dan tanggal selesai cuti terlebih dahulu pada kalender.');
+                showNotice('Silakan pilih tanggal mulai dan tanggal selesai cuti terlebih dahulu pada kalender.');
                 return;
             }
 
             if (computedWorkingDays <= 0) {
-                alert('Jumlah hari kerja untuk rentang tanggal yang Anda pilih adalah 0 hari kerja (seluruhnya hari libur/akhir pekan). Silakan pilih tanggal lain.');
+                showNotice('Jumlah hari kerja untuk rentang tanggal yang Anda pilih adalah 0 hari kerja (seluruhnya hari libur/akhir pekan). Silakan pilih tanggal lain.');
                 return;
             }
 

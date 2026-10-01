@@ -14,13 +14,13 @@ class MarriageDocumentTypeSeeder extends Seeder
     {
         $documents = [
             // A. SURAT DARI SATUAN
-            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_surat_permohonan.docx'],
-            ['code' => 'PENGANTAR_NA', 'name' => 'Surat Pengantar Nikah (NA)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_na.docx'],
-            ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_kesdam.docx'],
-            ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_bintaldam.docx'],
-            ['code' => 'PENGANTAR_LITPERS', 'name' => 'Surat Permohonan Penelitian Personel (Litpers)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_litpers.docx'],
-            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih dari Penelitian Khusus', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_pengantar_skbd.docx'],
-            ['code' => 'SURAT_KETERANGAN_BELUM_NIKAH', 'name' => 'Surat Keterangan Belum Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => null],
+            ['code' => 'SURAT_PERMOHONAN_IZIN_NIKAH', 'name' => 'Surat Permohonan Izin Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengajuan menikah.docx'],
+            ['code' => 'PENGANTAR_NA', 'name' => 'Surat Pengantar Nikah (NA)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar nikah (NA).docx'],
+            ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar kesdam.docx'],
+            ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar bintal.docx'],
+            ['code' => 'PENGANTAR_LITPERS', 'name' => 'Surat Permohonan Penelitian Personel (Litpers)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat Pengantar Litpers.docx'],
+            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih dari Penelitian Khusus', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar bersih diri.docx'],
+            ['code' => 'SURAT_KETERANGAN_BELUM_NIKAH', 'name' => 'Surat Keterangan Belum Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat keterangan belum menikah.docx'],
 
 
             // B. TEMPLATE CALON/PASANGAN
@@ -53,7 +53,7 @@ class MarriageDocumentTypeSeeder extends Seeder
             ['code' => 'DOKUMEN_LAIN_CALON_PASANGAN', 'name' => 'Dokumen Lain Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
 
             // E. SURAT FINAL
-            ['code' => 'SURAT_IZIN_NIKAH_FINAL', 'name' => 'Surat Izin Nikah', 'category' => 'SURAT_FINAL', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/dummy_surat_izin_nikah_final.docx'],
+            ['code' => 'SURAT_IZIN_NIKAH_FINAL', 'name' => 'Surat Izin Nikah', 'category' => 'SURAT_FINAL', 'owner_type' => 'ANGGOTA', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat izin nikah.docx'],
         ];
 
         $sortOrder = 10;

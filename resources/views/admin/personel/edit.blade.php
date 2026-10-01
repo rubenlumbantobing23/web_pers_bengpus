@@ -59,25 +59,42 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="jenis_kelamin">Jenis Kelamin</label>
+                    @php
+                        $jk = strtolower(trim($personel->jenis_kelamin ?? ''));
+                        $isPria = in_array($jk, ['pria', 'laki-laki', 'l']);
+                        $isWanita = in_array($jk, ['wanita', 'perempuan', 'p', 'w']);
+                        $mappedJk = $isPria ? 'Pria' : ($isWanita ? 'Wanita' : $personel->jenis_kelamin);
+                    @endphp
                     <select id="jenis_kelamin" name="jenis_kelamin" class="form-control">
                         <option value="">-- Pilih --</option>
-                        <option value="Pria" {{ old('jenis_kelamin', $personel->jenis_kelamin) === 'Pria' ? 'selected' : '' }}>Pria</option>
-                        <option value="Wanita" {{ old('jenis_kelamin', $personel->jenis_kelamin) === 'Wanita' ? 'selected' : '' }}>Wanita</option>
+                        <option value="Pria" {{ old('jenis_kelamin', $mappedJk) === 'Pria' ? 'selected' : '' }}>Pria</option>
+                        <option value="Wanita" {{ old('jenis_kelamin', $mappedJk) === 'Wanita' ? 'selected' : '' }}>Wanita</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="status_pernikahan">Status Pernikahan</label>
+                    @php
+                        $sn = strtolower(trim($personel->status_pernikahan ?? ''));
+                        $mappedNikah = $personel->status_pernikahan;
+                        if (in_array($sn, ['belum menikah', 'belum kawin', 'tk', 'tidak kawin'])) $mappedNikah = 'Belum Menikah';
+                        elseif (in_array($sn, ['menikah', 'kawin', 'k'])) $mappedNikah = 'Menikah';
+                        elseif (in_array($sn, ['cerai hidup', 'ch'])) $mappedNikah = 'Cerai Hidup';
+                        elseif (in_array($sn, ['cerai mati', 'cm'])) $mappedNikah = 'Cerai Mati';
+                    @endphp
                     <select id="status_pernikahan" name="status_pernikahan" class="form-control">
                         <option value="">-- Pilih --</option>
-                        <option value="Belum Menikah" {{ old('status_pernikahan', $personel->status_pernikahan) == 'Belum Menikah' ? 'selected' : '' }}>Belum Menikah</option>
-                        <option value="Menikah" {{ old('status_pernikahan', $personel->status_pernikahan) == 'Menikah' ? 'selected' : '' }}>Menikah</option>
-                        <option value="Cerai Hidup" {{ old('status_pernikahan', $personel->status_pernikahan) == 'Cerai Hidup' ? 'selected' : '' }}>Cerai Hidup</option>
-                        <option value="Cerai Mati" {{ old('status_pernikahan', $personel->status_pernikahan) == 'Cerai Mati' ? 'selected' : '' }}>Cerai Mati</option>
+                        <option value="Belum Menikah" {{ old('status_pernikahan', $mappedNikah) == 'Belum Menikah' ? 'selected' : '' }}>Belum Menikah</option>
+                        <option value="Menikah" {{ old('status_pernikahan', $mappedNikah) == 'Menikah' ? 'selected' : '' }}>Menikah</option>
+                        <option value="Cerai Hidup" {{ old('status_pernikahan', $mappedNikah) == 'Cerai Hidup' ? 'selected' : '' }}>Cerai Hidup</option>
+                        <option value="Cerai Mati" {{ old('status_pernikahan', $mappedNikah) == 'Cerai Mati' ? 'selected' : '' }}>Cerai Mati</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="tgl_lahir">Tanggal Lahir</label>
-                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir', $personel->tgl_lahir) }}">
+                    @php
+                        $tglLahirVal = $personel->tgl_lahir ? (strtotime($personel->tgl_lahir) ? date('Y-m-d', strtotime($personel->tgl_lahir)) : $personel->tgl_lahir) : '';
+                    @endphp
+                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir', $tglLahirVal) }}">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="tempat_lahir">Tempat Lahir</label>
@@ -132,6 +149,17 @@
                     <label class="form-label" for="tmt_jabatan">TMT Jabatan</label>
                     <input type="text" id="tmt_jabatan" name="tmt_jabatan" class="form-control" value="{{ old('tmt_jabatan', $personel->tmt_jabatan) }}">
                 </div>
+                @php
+                    $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)->where('is_active', true)->exists();
+                @endphp
+                @if($isPejabat)
+                <div class="form-group">
+                    <label class="form-label">Atasan Langsung</label>
+                    <div style="padding: 10px 14px; background: rgba(255,255,255,0.05); border-radius: 8px; color: var(--text-muted); font-size: 0.9rem; border: 1px dashed rgba(255,255,255,0.1);">
+                        <i class="fa-solid fa-circle-info" style="color: #60a5fa; margin-right: 6px;"></i> Personel ini menjabat secara struktural (Pejabat), Atasan Langsung ditentukan otomatis.
+                    </div>
+                </div>
+                @else
                 <div class="form-group">
                     <label class="form-label" for="organization_unit_id">Atasan Langsung *</label>
                     <select id="organization_unit_id" name="organization_unit_id" class="form-control" required>
@@ -144,6 +172,7 @@
                     </select>
                     <small class="text-muted" style="color: rgba(255, 255, 255, 0.5) !important;">Jika dipilih, pejabat ini otomatis menjadi penandatangan cuti.</small>
                 </div>
+                @endif
 
                 <div class="form-group">
                     <label class="form-label" for="satuan_bagian">Satuan (Teks Bebas) *</label>
@@ -216,8 +245,9 @@
                     <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="08123456789" value="{{ old('no_hp', $personel->no_hp) }}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="email">Email (untuk akun login)</label>
+                    <label class="form-label" for="email">Alamat Email</label>
                     <input type="email" id="email" name="email" class="form-control" value="{{ old('email', $personel->email) }}">
+                    <small class="text-muted" style="color: rgba(255, 255, 255, 0.5) !important;">Email digunakan untuk reset password dan menerima notifikasi sistem.</small>
                 </div>
                 <div class="form-group" style="display:flex; align-items:center; gap:10px; padding-top:26px;">
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#fff; font-weight:600; font-size:0.9rem;">

@@ -5,9 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use App\Models\MarriageDocumentType;
 
 class AdminTemplateController extends Controller
 {
+    private $cutiTemplates = [
+        'permohonan_perwira', 
+        'permohonan_bintara_tamtama', 
+        'permohonan_pns', 
+        'surat_cuti_perwira', 
+        'surat_cuti_bintara_tamtama',
+        'surat_cuti_pns',
+    ];
+
     public function index()
     {
         $templates = [
@@ -195,113 +206,46 @@ class AdminTemplateController extends Controller
                     '${nrp_penandatangan}' => 'NRP Penandatangan',
                 ]
             ],
-            // ─── MODULE PENGAJUAN NIKAH ─────────────────────────────────────
-            'surat_izin_nikah' => [
-                'name' => 'Surat Izin Nikah',
-                'description' => 'Surat Izin Nikah yang diterbitkan Pers setelah semua dokumen diverifikasi.',
-                'filename' => 'template_surat_izin_nikah.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP/NIP',
-                    '${jabatan}' => 'Jabatan', '${corps}' => 'Corps', '${satuan}' => 'Satuan',
-                    '${anggota_peran}' => 'Peran anggota (Calon Suami/Istri)',
-                    '${pasangan_peran}' => 'Peran pasangan', '${pasangan_sebutan}' => 'Sebutan pasangan (huruf kecil)',
-                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_ttl}' => 'TTL pasangan',
-                    '${pasangan_agama}' => 'Agama pasangan', '${pasangan_pekerjaan}' => 'Pekerjaan pasangan',
-                    '${pasangan_alamat}' => 'Alamat pasangan',
-                    '${nikah_tanggal}' => 'Tanggal nikah', '${nikah_hari}' => 'Hari nikah',
-                    '${nikah_tempat}' => 'Tempat nikah', '${nikah_alamat}' => 'Alamat nikah',
-                    '${tgl_pengajuan}' => 'Tgl pengajuan', '${tgl_terbit}' => 'Tgl surat terbit',
-                    '${nama_penandatangan}' => 'Nama Kabeng', '${pangkat_penandatangan}' => 'Pangkat Kabeng',
-                    '${nrp_penandatangan}' => 'NRP Kabeng',
-                ]
-            ],
-            'surat_pengantar_na' => [
-                'name' => 'Surat Pengantar NA',
-                'description' => 'Surat Pengantar Nikah (NA) dari satuan.',
-                'filename' => 'template_surat_pengantar_na.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
-                    '${pasangan_nama}' => 'Nama pasangan', '${nikah_tanggal}' => 'Tanggal rencana nikah',
-                    '${tgl_pengajuan}' => 'Tgl surat', '${nama_penandatangan}' => 'Nama Kabeng',
-                ]
-            ],
-            'surat_pengantar_kesdam' => [
-                'name' => 'Surat Pengantar Rikes Kesdam',
-                'description' => 'Surat pengantar pemeriksaan kesehatan Kesdam III/Siliwangi.',
-                'filename' => 'template_surat_pengantar_kesdam.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
-                    '${jabatan}' => 'Jabatan', '${satuan}' => 'Satuan',
-                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
-                    '${nama_penandatangan}' => 'Nama Kabeng',
-                ]
-            ],
-            'surat_pengantar_bintaldam' => [
-                'name' => 'Surat Pengantar Rikes Bintaldam',
-                'description' => 'Surat pengantar pemeriksaan mental Bintaldam III/Siliwangi.',
-                'filename' => 'template_surat_pengantar_bintaldam.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
-                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
-                    '${nama_penandatangan}' => 'Nama Kabeng',
-                ]
-            ],
-            'surat_pengantar_litpers' => [
-                'name' => 'Surat Pengantar Litpers',
-                'description' => 'Surat pengantar penelitian personel calon pasangan ke Kabangpam.',
-                'filename' => 'template_surat_pengantar_litpers.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
-                    '${pasangan_nama}' => 'Nama pasangan', '${tgl_pengajuan}' => 'Tgl surat',
-                    '${nama_penandatangan}' => 'Nama Kabeng',
-                ]
-            ],
-            'surat_skbd' => [
-                'name' => 'Surat Permohonan SKBD',
-                'description' => 'Surat Permohonan Surat Keterangan Bebas Dinas (SKBD).',
-                'filename' => 'template_surat_skbd.docx',
-                'placeholders' => [
-                    '${nama}' => 'Nama anggota', '${pangkat}' => 'Pangkat/Gol', '${nrp}' => 'NRP',
-                    '${jabatan}' => 'Jabatan', '${satuan}' => 'Satuan', '${tgl_pengajuan}' => 'Tgl surat',
-                    '${nama_penandatangan}' => 'Nama Kabeng',
-                ]
-            ],
-            'surat_persetujuan_ortua' => [
-                'name' => 'Surat Persetujuan Orang Tua/Wali',
-                'description' => 'Template surat persetujuan orang tua/wali pasangan.',
-                'filename' => 'template_surat_persetujuan_ortua.docx',
-                'placeholders' => [
-                    '${pasangan_bapak_nama}' => 'Nama bapak pasangan',
-                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_peran}' => 'Peran pasangan',
-                    '${nikah_tanggal}' => 'Tanggal nikah', '${tgl_pengajuan}' => 'Tgl surat',
-                ]
-            ],
-            'surat_kesanggupan_pasangan' => [
-                'name' => 'Surat Kesanggupan Calon Pasangan',
-                'description' => 'Surat kesanggupan dari calon pasangan.',
-                'filename' => 'template_surat_kesanggupan_pasangan.docx',
-                'placeholders' => [
-                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_ttl}' => 'TTL pasangan',
-                    '${pasangan_peran}' => 'Peran pasangan', '${nama}' => 'Nama anggota',
-                    '${nikah_tanggal}' => 'Tanggal nikah', '${tgl_pengajuan}' => 'Tgl surat',
-                ]
-            ],
-            'surat_ket_usia' => [
-                'name' => 'Surat Keterangan Usia Calon Pasangan',
-                'description' => 'Surat keterangan usia calon pasangan. TODO: validasi batas usia sesuai ketentuan Pers.',
-                'filename' => 'template_surat_ket_usia.docx',
-                'placeholders' => [
-                    '${pasangan_nama}' => 'Nama pasangan', '${pasangan_tanggal_lahir}' => 'Tgl lahir pasangan',
-                    '${pasangan_ttl}' => 'TTL pasangan', '${tgl_pengajuan}' => 'Tgl surat',
-                ]
-            ],
         ];
 
-        // Check if templates exist
+        // Process Cuti templates
         foreach ($templates as $key => &$template) {
             $path = storage_path('app/templates/' . $template['filename']);
             $template['exists'] = file_exists($path);
             $template['last_modified'] = $template['exists'] ? filemtime($path) : null;
+        }
+
+        // Dynamically add Marriage Document Types
+        $marriageTypes = MarriageDocumentType::whereNotNull('template_path')->get();
+        
+        $marriagePlaceholders = [
+            '${nama_anggota}' => 'Nama anggota', '${pangkat_anggota}' => 'Pangkat/Gol', '${nrp_anggota}' => 'NRP/NIP',
+            '${jabatan_anggota}' => 'Jabatan', '${satuan_anggota}' => 'Satuan',
+            '${peran_anggota}' => 'Peran anggota (Calon Suami/Istri)',
+            '${peran_pasangan}' => 'Peran pasangan', '${sebutan_pasangan}' => 'Sebutan pasangan (huruf kecil)',
+            '${nama_pasangan}' => 'Nama pasangan', '${tempat_lahir_pasangan}' => 'Tempat lahir pasangan',
+            '${tgl_lahir_pasangan}' => 'Tgl lahir pasangan',
+            '${agama_pasangan}' => 'Agama pasangan', '${pekerjaan_pasangan}' => 'Pekerjaan pasangan',
+            '${alamat_pasangan}' => 'Alamat pasangan',
+            '${tempat_nikah}' => 'Tempat nikah', '${tanggal_rencana_nikah}' => 'Tanggal rencana nikah',
+            '${tanggal_surat}' => 'Tgl surat',
+            '${nama_pejabat}' => 'Nama Signer Utama', '${pangkat_pejabat}' => 'Pangkat Signer Utama',
+            '${corps_pejabat}' => 'Korps Signer Utama (dari nominatif personel)',
+            '${nrp_pejabat}' => 'NRP Signer Utama',
+            '${nama_pejabat_mengetahui}' => 'Nama Signer Mengetahui',
+            '${nama_pejabat_kabag}' => 'Nama Kabag sesuai unit anggota',
+        ];
+
+        foreach ($marriageTypes as $mType) {
+            $path = storage_path('app/' . $mType->template_path);
+            $templates[$mType->code] = [
+                'name' => 'Nikah - ' . $mType->name,
+                'description' => 'Template untuk modul Pengajuan Nikah: ' . $mType->name,
+                'filename' => basename($mType->template_path),
+                'placeholders' => $marriagePlaceholders,
+                'exists' => file_exists($path),
+                'last_modified' => file_exists($path) ? filemtime($path) : null,
+            ];
         }
 
         return view('admin.templates.index', compact('templates'));
@@ -309,77 +253,93 @@ class AdminTemplateController extends Controller
 
     public function upload(Request $request)
     {
-        $validTypes = [
-            'permohonan_perwira', 
-            'permohonan_bintara_tamtama', 
-            'permohonan_pns', 
-            'surat_cuti_perwira', 
-            'surat_cuti_bintara_tamtama',
-            'surat_cuti_pns',
-            // Nikah templates
-            'surat_izin_nikah',
-            'surat_pengantar_na',
-            'surat_pengantar_kesdam',
-            'surat_pengantar_bintaldam',
-            'surat_pengantar_litpers',
-            'surat_skbd',
-            'surat_persetujuan_ortua',
-            'surat_kesanggupan_pasangan',
-            'surat_ket_usia',
-        ];
+        $type = $request->template_type;
+
+        $isCuti = in_array($type, $this->cutiTemplates);
+        $marriageType = null;
+        
+        if (!$isCuti) {
+            $marriageType = MarriageDocumentType::where('code', $type)->whereNotNull('template_path')->first();
+            if (!$marriageType) {
+                return redirect()->back()->with('error', 'Tipe template tidak valid atau tidak didukung.');
+            }
+        }
 
         $request->validate([
-            'template_type' => 'required|in:' . implode(',', $validTypes),
+            'template_type' => 'required|string',
             'template_file' => 'required|file|mimes:docx|max:5120',
         ], [
             'template_file.mimes' => 'File template harus berformat .docx (Word).',
             'template_file.max' => 'Ukuran file maksimal adalah 5MB.',
         ]);
 
-        $type = $request->template_type;
-        $filename = 'template_' . $type . '.docx';
+        $file = $request->file('template_file');
+        
+        // Basic DOCX validation by trying to open it as ZIP
+        $zip = new \ZipArchive();
+        $res = $zip->open($file->getRealPath());
+        if ($res !== true) {
+            return redirect()->back()->with('error', 'File yang diupload bukan DOCX yang valid atau rusak.');
+        }
+        
+        // Ensure it contains word/document.xml
+        if ($zip->locateName('word/document.xml') === false) {
+            $zip->close();
+            return redirect()->back()->with('error', 'File yang diupload tidak memiliki struktur OpenXML (word/document.xml).');
+        }
+        $zip->close();
 
-        // Ensure directory exists
-        $directory = storage_path('app/templates');
-        if (!File::isDirectory($directory)) {
-            File::makeDirectory($directory, 0755, true, true);
+        if ($isCuti) {
+            $filename = 'template_' . $type . '.docx';
+            $directory = storage_path('app/templates');
+            
+            if (!File::isDirectory($directory)) {
+                File::makeDirectory($directory, 0755, true, true);
+            }
+            
+            $file->move($directory, $filename);
+        } else {
+            // Marriage Type
+            $targetPath = storage_path('app/' . $marriageType->template_path);
+            $directory = dirname($targetPath);
+            
+            if (!File::isDirectory($directory)) {
+                File::makeDirectory($directory, 0755, true, true);
+            }
+            
+            // Backup old file if exists
+            if (file_exists($targetPath)) {
+                $backupPath = $targetPath . '.bak_' . time();
+                copy($targetPath, $backupPath);
+            }
+            
+            // Overwrite exactly the existing file
+            $file->move($directory, basename($targetPath));
         }
 
-        // Store the uploaded file, overwriting existing
-        $file = $request->file('template_file');
-        $file->move($directory, $filename);
-
         return redirect()->route('admin.templates.index')
-            ->with('success', 'Template ' . $type . ' berhasil diperbarui.');
+            ->with('success', 'Template ' . ($isCuti ? $type : $marriageType->name) . ' berhasil diperbarui.');
     }
 
     public function download($type)
     {
-        $validTypes = [
-            'permohonan_perwira', 
-            'permohonan_bintara_tamtama', 
-            'permohonan_pns', 
-            'surat_cuti_perwira', 
-            'surat_cuti_bintara_tamtama',
-            'surat_cuti_pns',
-            // Nikah templates
-            'surat_izin_nikah',
-            'surat_pengantar_na',
-            'surat_pengantar_kesdam',
-            'surat_pengantar_bintaldam',
-            'surat_pengantar_litpers',
-            'surat_skbd',
-            'surat_persetujuan_ortua',
-            'surat_kesanggupan_pasangan',
-            'surat_ket_usia',
-        ];
-
-        if (!in_array($type, $validTypes)) {
-            abort(404);
+        $isCuti = in_array($type, $this->cutiTemplates);
+        $marriageType = null;
+        
+        if (!$isCuti) {
+            $marriageType = MarriageDocumentType::where('code', $type)->whereNotNull('template_path')->first();
+            if (!$marriageType) {
+                abort(404, 'Tipe template tidak valid.');
+            }
         }
 
-        $filename = 'template_' . $type . '.docx';
-        $path = storage_path('app/templates/' . $filename);
+        if ($isCuti) {
+            $filename = 'template_' . $type . '.docx';
+            $path = storage_path('app/templates/' . $filename);
+        } else {
+            $path = storage_path('app/' . $marriageType->template_path);
+            $filename = basename($path);
+        }
 
         if (!file_exists($path)) {
             return back()->with('error', 'File template belum tersedia.');

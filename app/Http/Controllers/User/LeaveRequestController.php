@@ -74,107 +74,126 @@ class LeaveRequestController extends Controller
 
     public function downloadPermohonanTemplate(Request $request)
     {
-        $user = Auth::user();
-        $personel = $user->personel;
-
-        $nama = $personel ? $personel->nama : $user->name;
-        $pangkat = $personel ? $personel->pangkat_golongan : '-';
-        $nrp = $personel ? $personel->nrp_nip : '-';
-        $jabatan = $personel ? str_replace(["\r", "\n"], ' ', $personel->jabatan) : '-';
-        $satuan = $personel ? $personel->satuan_bagian : 'Bengpuskomlekad';
-        $kategori = $personel ? $personel->kategori_personel : '';
-        $leaveTypeName = 'Cuti Tahunan';
-        if ($request->filled('leave_type_id')) {
-            $lt = LeaveType::find($request->leave_type_id);
-            if ($lt) {
-                $leaveTypeName = $lt->name;
-            }
-        }
-
-        $startDateRaw = $request->input('start_date');
-        $endDateRaw = $request->input('end_date');
-        
-        $startDate = $startDateRaw ? \Carbon\Carbon::parse($startDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
-        $endDate = $endDateRaw ? \Carbon\Carbon::parse($endDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
-
-        $corps = $personel ? ($personel->corps ?: '-') : '-';
-
-        $templateType = 'permohonan_bintara_tamtama';
-        if (in_array($kategori, ['Perwira Menengah', 'Perwira Pertama'])) {
-            $templateType = 'permohonan_perwira';
-        } elseif (in_array($kategori, ['Bintara', 'Tamtama'])) {
-            $templateType = 'permohonan_bintara_tamtama';
-        } elseif ($kategori === 'PNS') {
-            $templateType = 'permohonan_pns';
-        }
-        $templatePath = storage_path('app/templates/template_' . $templateType . '.docx');
-        
-        if (!file_exists($templatePath)) {
-            return back()->with('error', 'Template Surat Permohonan untuk kategori ini belum dikonfigurasi oleh Admin.');
-        }
-
-        // Resolve signers and supervisor from Organization Structure Service
-        $structureService = app(\App\Services\OrganizationStructureService::class);
-        $supervisor = $structureService->getSupervisorForPersonel($personel);
-        if (!$supervisor) {
-            return back()->with('error', "Pejabat atasan untuk satuan/bagian Anda belum dikonfigurasi oleh Admin.");
-        }
-
-        $templateProcessor = $this->createTemplateProcessorWithSeparatedCorps($templatePath);
-        
-        $templateProcessor->setValue('tgl_pengajuan', now()->locale('id')->isoFormat('D MMMM Y'));
-        $templateProcessor->setValue('nama', $nama);
-        $templateProcessor->setValue('pangkat', $pangkat);
-        $templateProcessor->setValue('nrp', $nrp);
-        $templateProcessor->setValue('jabatan', $jabatan);
-        $templateProcessor->setValue('satuan', $satuan);
-        // Applicant corps (for pemohon block)
-        $corpsStr = $corps ? trim($corps) : '';
-        $templateProcessor->setValue('corps', $corpsStr);
-        $templateProcessor->setValue('corps_pemohon', $corpsStr);
-        $templateProcessor->setValue('no_hp', $request->input('emergency_contact') ?? '-');
-        $templateProcessor->setValue('alasan', $request->input('reason') ?? '-');
-        $templateProcessor->setValue('jenis_cuti', $leaveTypeName);
-        $templateProcessor->setValue('tgl_mulai', $startDate);
-        $templateProcessor->setValue('tgl_selesai', $endDate);
-
-        // Map signers (ambil corps penandatangan dari nominatif personel via NRP)
-        // 1. Atasan Langsung (Kasub / Kabag)
-        $corpsKabag = $structureService->resolveCorpsForPersonel($supervisor);
-        $corpsKabagStr = $corpsKabag ? trim($corpsKabag) : '';
-        $templateProcessor->setValue('nama_kabag', $supervisor->nama);
-        $templateProcessor->setValue('pangkat_kabag', trim($supervisor->pangkat_golongan));
-        $templateProcessor->setValue('corps_kabag', $corpsKabagStr);
-        $templateProcessor->setValue('nrp_kabag', $supervisor->nrp_nip);
-
-        $roles = ['kabagum', 'waka', 'kabeng'];
-        foreach ($roles as $role) {
-            $p = $structureService->getSignerPersonel($role);
-
-            $corpsRole = $structureService->resolveCorpsForPersonel($p);
-            $corpsRoleStr = $corpsRole ? trim($corpsRole) : '';
-            $templateProcessor->setValue('nama_' . $role, $p ? $p->nama : '-');
-            $pangkatRole = $p ? trim($p->pangkat_golongan) : '-';
-            $templateProcessor->setValue('pangkat_' . $role, $pangkatRole);
-            $templateProcessor->setValue('corps_' . $role, $corpsRoleStr);
-            $templateProcessor->setValue('nrp_' . $role, $p ? $p->nrp_nip : '-');
-        }
-        
-        // Count total days
         try {
-            $totalDays = $startDateRaw && $endDateRaw ? \Carbon\Carbon::parse($startDateRaw)->diffInDays(\Carbon\Carbon::parse($endDateRaw)) + 1 : '-';
+            $user = Auth::user();
+            $personel = $user->personel;
+
+            $nama = $personel ? $personel->nama : $user->name;
+            $pangkat = $personel ? $personel->pangkat_golongan : '-';
+            $nrp = $personel ? $personel->nrp_nip : '-';
+            $jabatan = $personel ? str_replace(["\r", "\n"], ' ', $personel->jabatan) : '-';
+            $satuan = $personel ? $personel->satuan_bagian : 'Bengpuskomlekad';
+            $kategori = $personel ? $personel->kategori_personel : '';
+            $leaveTypeName = 'Cuti Tahunan';
+            if ($request->filled('leave_type_id')) {
+                $lt = LeaveType::find($request->leave_type_id);
+                if ($lt) {
+                    $leaveTypeName = $lt->name;
+                }
+            }
+
+            $startDateRaw = $request->input('start_date');
+            $endDateRaw = $request->input('end_date');
+            
+            $startDate = $startDateRaw ? \Carbon\Carbon::parse($startDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
+            $endDate = $endDateRaw ? \Carbon\Carbon::parse($endDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
+
+            $corps = $personel ? ($personel->corps ?: '-') : '-';
+
+            $isPejabat = false;
+            if ($personel) {
+                $isPejabat = \App\Models\OrganizationOfficialAssignment::where('personel_id', $personel->id)
+                    ->where('is_active', true)
+                    ->exists();
+            }
+
+            $templateType = 'permohonan_bintara_tamtama';
+            if ($isPejabat) {
+                $templateType = 'permohonan_pejabat';
+            } elseif (in_array($kategori, ['Perwira Menengah', 'Perwira Pertama'])) {
+                $templateType = 'permohonan_perwira';
+            } elseif (in_array($kategori, ['Bintara', 'Tamtama'])) {
+                $templateType = 'permohonan_bintara_tamtama';
+            } elseif ($kategori === 'PNS') {
+                $templateType = 'permohonan_pns';
+            }
+            $templatePath = storage_path('app/templates/template_' . $templateType . '.docx');
+            
+            if (!file_exists($templatePath)) {
+                return response()->json([
+                    'error' => 'Template Surat Permohonan untuk kategori ini belum dikonfigurasi oleh Admin. Hubungi Staf Personalia.'
+                ], 404);
+            }
+
+            // Resolve signers and supervisor from Organization Structure Service
+            $structureService = app(\App\Services\OrganizationStructureService::class);
+            $supervisor = $structureService->getSupervisorForPersonel($personel);
+
+            $templateProcessor = $this->createTemplateProcessorWithSeparatedCorps($templatePath);
+            
+            $templateProcessor->setValue('tgl_pengajuan', now()->locale('id')->isoFormat('D MMMM Y'));
+            $templateProcessor->setValue('nama', $nama);
+            $templateProcessor->setValue('pangkat', $pangkat);
+            $templateProcessor->setValue('nrp', $nrp);
+            $templateProcessor->setValue('jabatan', $jabatan);
+            $templateProcessor->setValue('satuan', $satuan);
+            // Applicant corps (for pemohon block)
+            $corpsStr = $corps ? trim($corps) : '';
+            $templateProcessor->setValue('corps', $corpsStr);
+            $templateProcessor->setValue('corps_pemohon', $corpsStr);
+            $templateProcessor->setValue('no_hp', $request->input('emergency_contact') ?? '-');
+            $templateProcessor->setValue('alasan', $request->input('reason') ?? '-');
+            $templateProcessor->setValue('jenis_cuti', $leaveTypeName);
+            $templateProcessor->setValue('tgl_mulai', $startDate);
+            $templateProcessor->setValue('tgl_selesai', $endDate);
+
+            // Map signers (ambil corps penandatangan dari nominatif personel via NRP)
+            // 1. Atasan Langsung (Kasub / Kabag)
+            $corpsKabag = $structureService->resolveCorpsForPersonel($supervisor);
+            $corpsKabagStr = $corpsKabag ? trim($corpsKabag) : '';
+            $templateProcessor->setValue('nama_kabag', $supervisor ? $supervisor->nama : '-');
+            $templateProcessor->setValue('pangkat_kabag', $supervisor ? trim($supervisor->pangkat_golongan) : '-');
+            $templateProcessor->setValue('corps_kabag', $corpsKabagStr);
+            $templateProcessor->setValue('nrp_kabag', $supervisor ? $supervisor->nrp_nip : '-');
+
+            $roles = ['kabagum', 'waka', 'kabeng'];
+            foreach ($roles as $role) {
+                $p = $structureService->getSignerPersonel($role);
+
+                $corpsRole = $structureService->resolveCorpsForPersonel($p);
+                $corpsRoleStr = $corpsRole ? trim($corpsRole) : '';
+                $templateProcessor->setValue('nama_' . $role, $p ? $p->nama : '-');
+                $pangkatRole = $p ? trim($p->pangkat_golongan) : '-';
+                $templateProcessor->setValue('pangkat_' . $role, $pangkatRole);
+                $templateProcessor->setValue('corps_' . $role, $corpsRoleStr);
+                $templateProcessor->setValue('nrp_' . $role, $p ? $p->nrp_nip : '-');
+            }
+            
+            // Count total days
+            try {
+                $totalDays = $startDateRaw && $endDateRaw ? \Carbon\Carbon::parse($startDateRaw)->diffInDays(\Carbon\Carbon::parse($endDateRaw)) + 1 : '-';
+            } catch (\Exception $e) {
+                $totalDays = '-';
+            }
+            $templateProcessor->setValue('total_hari', $totalDays);
+
+            $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $nama);
+            $fileName = 'Surat_Permohonan_Cuti_' . ($cleanName ?: 'Anggota') . '.docx';
+
+            // Gunakan temp file dengan ekstensi .docx eksplisit
+            // (tempnam() tanpa ekstensi bisa menyebabkan nama file UUID saat download di Windows)
+            $tempDir = sys_get_temp_dir();
+            $tempFile = $tempDir . DIRECTORY_SEPARATOR . 'phpword_' . uniqid() . '.docx';
+            $templateProcessor->saveAs($tempFile);
+
+            return response()->download($tempFile, $fileName, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ])->deleteFileAfterSend(true);
         } catch (\Exception $e) {
-            $totalDays = '-';
+            \Log::error('Download Permohonan Template Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response('<html><body style="font-family:sans-serif;padding:40px"><h2 style="color:red">Gagal Generate Template</h2><p>' . e($e->getMessage()) . '</p><a href="javascript:history.back()">Kembali</a></body></html>', 500)
+                ->header('Content-Type', 'text/html');
         }
-        $templateProcessor->setValue('total_hari', $totalDays);
-
-        $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $nama);
-        $fileName = 'Surat_Permohonan_Cuti_' . ($cleanName ?: 'Anggota') . '.docx';
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'phpword');
-        $templateProcessor->saveAs($tempFile);
-
-        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 
     public function downloadIzinTemplate(Request $request)
@@ -313,6 +332,12 @@ class LeaveRequestController extends Controller
     {
         $request->validate([
             'leave_type_id' => 'required|exists:leave_types,id',
+        ]);
+
+        $leaveType = LeaveType::findOrFail($request->leave_type_id);
+
+        $rules = [
+            'leave_type_id' => 'required|exists:leave_types,id',
             'terms_accepted' => 'required|accepted',
             'start_date' => 'required|date|after_or_equal:today',
             'end_date' => 'required|date|after_or_equal:start_date',
@@ -323,12 +348,24 @@ class LeaveRequestController extends Controller
             'kodim_koramil' => 'required|string|max:255',
             'emergency_contact' => 'required|string|max:100',
             'permohonan_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'supporting_documents.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-        ], [
+        ];
+
+        if (!empty($leaveType->required_documents_info) && $leaveType->code !== 'CT_TAHUNAN') {
+            $rules['supporting_documents'] = 'required|array|min:1';
+            $rules['supporting_documents.*'] = 'file|mimes:pdf,jpg,jpeg,png|max:5120';
+        } else {
+            $rules['supporting_documents'] = 'nullable|array';
+            $rules['supporting_documents.*'] = 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120';
+        }
+
+        $messages = [
             'terms_accepted.accepted' => 'Anda harus membaca dan menyetujui syarat dan ketentuan sebelum mengajukan cuti.',
             'start_date.after_or_equal' => 'Tanggal mulai cuti tidak boleh di masa lalu.',
             'end_date.after_or_equal' => 'Tanggal selesai cuti harus sama atau setelah tanggal mulai.',
-        ]);
+            'supporting_documents.required' => 'Jenis cuti ini mewajibkan Anda untuk mengunggah dokumen pendukung tambahan.',
+        ];
+
+        $request->validate($rules, $messages);
 
         $user = Auth::user();
         $workingDays = LeaveCalculator::calculateWorkingDays($request->start_date, $request->end_date);
@@ -340,7 +377,6 @@ class LeaveRequestController extends Controller
         }
 
         $entitlement = LeaveCalculator::getUserEntitlementSummary($user->id);
-        $leaveType = LeaveType::findOrFail($request->leave_type_id);
 
         // Validasi jatah cuti khusus Cuti Tahunan, Cuti Kawin, dan jenis cuti lainnya
         if ($leaveType->code === 'CT_TAHUNAN') {
