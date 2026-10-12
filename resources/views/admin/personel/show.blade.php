@@ -189,8 +189,21 @@
                             <tr>
                                 <td><strong style="color:#fff;">{{ $lr->request_number }}</strong></td>
                                 <td>{{ $lr->leaveType->name ?? '-' }}</td>
-                                <td>{{ $lr->start_date->format('d/m/Y') }} – {{ $lr->end_date->format('d/m/Y') }}</td>
-                                <td><strong style="color:#34d399;">{{ $lr->working_days_count }} Hari</strong></td>
+                                <td>
+                                    {{ $lr->start_date->format('d/m/Y') }} – 
+                                    @if($lr->status === 'approved')
+                                        @if($lr->approved_end_date)
+                                            {{ \Carbon\Carbon::parse($lr->approved_end_date)->format('d/m/Y') }}
+                                        @elseif(!is_null($lr->approved_days) && $lr->approved_days < $lr->working_days_count)
+                                            <span title="Data lama (belum tercatat)" style="color: #fca5a5; font-size: 0.85rem;">[Tinjau]</span>
+                                        @else
+                                            {{ $lr->end_date->format('d/m/Y') }}
+                                        @endif
+                                    @else
+                                        {{ $lr->end_date->format('d/m/Y') }}
+                                    @endif
+                                </td>
+                                <td><strong style="color:#34d399;">{{ $lr->status === 'approved' ? ($lr->approved_days ?? $lr->working_days_count) : $lr->working_days_count }} Hari</strong></td>
                                 <td>
                                     @if($lr->status === 'pending')
                                         <span class="badge badge-pending">PENDING</span>
@@ -347,8 +360,21 @@ function closeDelete() {
                                 <tr>
                                     <td><strong style="color: #fff;">{{ $lr->request_number }}</strong></td>
                                     <td>{{ $lr->leaveType->name ?? '-' }}</td>
-                                    <td>{{ $lr->start_date->format('d/m/Y') }} - {{ $lr->end_date->format('d/m/Y') }}</td>
-                                    <td><strong style="color: #34d399;">{{ $lr->working_days_count }} Hari</strong></td>
+                                    <td>
+                                        {{ $lr->start_date->format('d/m/Y') }} - 
+                                        @if($lr->status === 'approved')
+                                            @if($lr->approved_end_date)
+                                                {{ \Carbon\Carbon::parse($lr->approved_end_date)->format('d/m/Y') }}
+                                            @elseif(!is_null($lr->approved_days) && $lr->approved_days < $lr->working_days_count)
+                                                <span title="Data lama (belum tercatat)" style="color: #fca5a5; font-size: 0.85rem;">[Tinjau]</span>
+                                            @else
+                                                {{ $lr->end_date->format('d/m/Y') }}
+                                            @endif
+                                        @else
+                                            {{ $lr->end_date->format('d/m/Y') }}
+                                        @endif
+                                    </td>
+                                    <td><strong style="color: #34d399;">{{ $lr->status === 'approved' ? ($lr->approved_days ?? $lr->working_days_count) : $lr->working_days_count }} Hari</strong></td>
                                     <td>
                                         @if($lr->status === 'pending')
                                             <span class="badge badge-pending">PENDING</span>

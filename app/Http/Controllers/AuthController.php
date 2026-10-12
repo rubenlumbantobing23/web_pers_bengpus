@@ -21,9 +21,9 @@ class AuthController extends Controller
         }
 
         $totalPersonel = Personel::count();
-        $activeLeaves = \App\Models\LeaveRequest::where('status', 'APPROVED')
+        $activeLeaves = \App\Models\LeaveRequest::where('status', 'approved')
                         ->where('start_date', '<=', now()->toDateString())
-                        ->where('end_date', '>=', now()->toDateString())
+                        ->where(\Illuminate\Support\Facades\DB::raw('COALESCE(approved_end_date, end_date)'), '>=', now()->toDateString())
                         ->count();
 
         return view('auth.login', compact('totalPersonel', 'activeLeaves'));
@@ -36,20 +36,29 @@ class AuthController extends Controller
             'password' => ['required'],
         ]);
 
-        $loginInput = $request->input('login_id');
+        $loginInput = strtolower(trim($request->input('login_id')));
         $password = $request->input('password');
         $remember = $request->boolean('remember');
         $userToLogin = null;
 
-        // 1. Cari personels berdasarkan nrp_nip
-        $personel = Personel::where('nrp_nip', $loginInput)->first();
-        if ($personel && $personel->user_id) {
-            $user = User::find($personel->user_id);
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            // Login Admin dengan Email
+            $user = User::where('email', $loginInput)->where('role', 'admin')->first();
             if ($user && Hash::check($password, $user->password)) {
-                if (!$personel->status_aktif) {
-                    return back()->withErrors(['login_id' => 'Akun Personel Anda telah dinonaktifkan. Hubungi Admin.'])->onlyInput('login_id');
-                }
                 $userToLogin = $user;
+            }
+        } else {
+            // Login Anggota dengan NRP/NIP
+            $personel = Personel::where('nrp_nip', $loginInput)->first();
+            if ($personel && $personel->user_id) {
+                $user = User::find($personel->user_id);
+                // Pastikan role-nya 'user'
+                if ($user && $user->role === 'user' && Hash::check($password, $user->password)) {
+                    if (!$personel->status_aktif) {
+                        return back()->withErrors(['login_id' => 'Akun Personel Anda telah dinonaktifkan. Hubungi Admin.'])->onlyInput('login_id');
+                    }
+                    $userToLogin = $user;
+                }
             }
         }
 
@@ -63,7 +72,7 @@ class AuthController extends Controller
                 return redirect()->route('admin.dashboard')->with('success', 'Selamat datang di Dashboard Admin Personalia.');
             }
 
-            return redirect()->route('user.dashboard')->with('success', 'Selamat datang kembali, ' . $userToLogin->name);
+            return redirect()->route('user.dashboard');
         }
 
         return back()->withErrors([
@@ -100,7 +109,7 @@ class AuthController extends Controller
         if (!$personel) {
             return response()->json([
                 'found' => false,
-                'message' => 'NRP/NIP belum terdaftar pada Nominatif Personel.',
+                'message' => 'Kombinasi NRP/NIP dan Tanggal Lahir tidak cocok dengan data kami.',
             ]);
         }
 
@@ -169,7 +178,7 @@ class AuthController extends Controller
             'nrp_nip' => ['required', 'string', 'max:50'],
             'tgl_lahir' => ['required', 'date'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'no_hp' => ['required', 'string', 'max:50'],
         ];
 

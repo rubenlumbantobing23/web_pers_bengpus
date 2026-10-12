@@ -112,16 +112,33 @@
                 </div>
 
                 <div>
-                    <span style="font-size: 0.775rem; color: var(--text-muted);">Jumlah Hari Kerja Dihitung:</span>
+                    <span style="font-size: 0.775rem; color: var(--text-muted);">Jumlah Hari Kerja Diajukan:</span>
                     <div style="font-size: 1.1rem; font-weight: 800; color: #34d399;">{{ $leaveRequest->working_days_count }} Hari Kerja</div>
                 </div>
 
                 <div>
-                    <span style="font-size: 0.775rem; color: var(--text-muted);">Periode Tanggal:</span>
+                    <span style="font-size: 0.775rem; color: var(--text-muted);">Periode Tanggal Diajukan:</span>
                     <div style="font-size: 0.95rem; color: #fff; font-weight: 600;">
-                        {{ $leaveRequest->start_date->format('d M Y') }} s/d {{ $leaveRequest->end_date->format('d M Y') }}
+                        {{ \Carbon\Carbon::parse($leaveRequest->start_date)->format('d M Y') }} s/d {{ \Carbon\Carbon::parse($leaveRequest->end_date)->format('d M Y') }}
                     </div>
                 </div>
+
+                @if($leaveRequest->status === 'approved')
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                    <span style="font-size: 0.775rem; color: var(--accent-gold);">Hari Kerja Disetujui:</span>
+                    <div style="font-size: 1.1rem; font-weight: 800; color: var(--accent-gold);">
+                        {{ $leaveRequest->approved_days ?? $leaveRequest->working_days_count }} Hari Kerja
+                    </div>
+                    <span style="font-size: 0.775rem; color: var(--accent-gold); display: block; margin-top: 4px;">Periode Disetujui:</span>
+                    @if(is_null($leaveRequest->approved_end_date) && !is_null($leaveRequest->approved_days) && $leaveRequest->approved_days < $leaveRequest->working_days_count)
+                        <div style="font-size: 0.85rem; font-weight: 500; color: #fca5a5; margin-top: 4px;">Periode persetujuan belum tercatat; perlu ditinjau admin</div>
+                    @else
+                        <div style="font-size: 0.95rem; color: #fff; font-weight: 600;">
+                            {{ \Carbon\Carbon::parse($leaveRequest->start_date)->format('d M Y') }} s/d {{ \Carbon\Carbon::parse($leaveRequest->approved_end_date ?? $leaveRequest->end_date)->format('d M Y') }}
+                        </div>
+                    @endif
+                </div>
+                @endif
 
                 <div>
                     <span style="font-size: 0.775rem; color: var(--text-muted);">Alasan Cuti:</span>

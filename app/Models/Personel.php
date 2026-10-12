@@ -134,12 +134,22 @@ class Personel extends Model
         return trim($parts[0]) ?: null;
     }
 
-    /** Baris kedua dari agama_suku = Suku */
     public function getSukuAttribute(): ?string
     {
         if (!$this->agama_suku) return null;
         $parts = preg_split('/[\n\/\|]+/', $this->agama_suku, 2);
         return isset($parts[1]) ? trim($parts[1]) : null;
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($personel) {
+            if ($personel->user_id) {
+                User::find($personel->user_id)?->delete();
+            }
+        });
     }
 }
 

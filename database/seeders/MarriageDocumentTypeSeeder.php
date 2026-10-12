@@ -19,7 +19,7 @@ class MarriageDocumentTypeSeeder extends Seeder
             ['code' => 'PENGANTAR_KESDAM', 'name' => 'Surat Permohonan Pemeriksaan Badan ke Kesdam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar kesdam.docx'],
             ['code' => 'PENGANTAR_BINTALDAM', 'name' => 'Surat Permohonan Petunjuk/Pendapat ke Bintaldam III/Siliwangi', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar bintal.docx'],
             ['code' => 'PENGANTAR_LITPERS', 'name' => 'Surat Permohonan Penelitian Personel (Litpers)', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat Pengantar Litpers.docx'],
-            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih dari Penelitian Khusus', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar bersih diri.docx'],
+            ['code' => 'PENGANTAR_SKBD', 'name' => 'Surat Permohonan Surat Keterangan Bersih Diri', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat pengantar bersih diri.docx'],
             ['code' => 'SURAT_KETERANGAN_BELUM_NIKAH', 'name' => 'Surat Keterangan Belum Nikah', 'category' => 'SURAT_SATUAN', 'owner_type' => 'SATUAN', 'source_type' => 'SYSTEM', 'template_path' => 'templates/marriage/Surat keterangan belum menikah.docx'],
 
 
@@ -40,10 +40,10 @@ class MarriageDocumentTypeSeeder extends Seeder
             ['code' => 'SKCK_ORANG_TUA', 'name' => 'SKCK Orang Tua Anggota', 'category' => 'HASIL_INSTANSI', 'owner_type' => 'ORANG_TUA_ANGGOTA', 'source_type' => 'INSTANSI_LUAR'],
 
             // D. DOKUMEN PASANGAN
-            ['code' => 'KK_CALON_PASANGAN', 'name' => 'Fotokopi KK Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'AKTA_KELAHIRAN_CALON_PASANGAN', 'name' => 'Fotokopi Akta Kelahiran Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'KTP_CALON_PASANGAN', 'name' => 'Fotokopi KTP Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
-            ['code' => 'IJAZAH_TERAKHIR_CALON_PASANGAN', 'name' => 'Fotokopi Ijazah Terakhir Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'KK_CALON_PASANGAN', 'name' => 'KK Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'AKTA_KELAHIRAN_CALON_PASANGAN', 'name' => 'Akta Kelahiran Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'KTP_CALON_PASANGAN', 'name' => 'KTP Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
+            ['code' => 'IJAZAH_TERAKHIR_CALON_PASANGAN', 'name' => 'Ijazah Terakhir Calon Pasangan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
             ['code' => 'PAS_FOTO_BERDAMPINGAN', 'name' => 'Pas Foto Biru 9x6 pakaian Persit tanpa lencana, berdampingan', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
             ['code' => 'PAS_FOTO_4X6_CALON_ISTRI_ORANG_TUA', 'name' => 'Pas Foto 4x6 Calon Istri + Kedua Orang Tua', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'PASANGAN'],
             ['code' => 'LITPERS_CALON_PASANGAN', 'name' => 'Litpers Calon Suami/Istri', 'category' => 'DOKUMEN_PASANGAN', 'owner_type' => 'PASANGAN', 'source_type' => 'INSTANSI_LUAR'],

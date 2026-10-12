@@ -11,8 +11,8 @@ use App\Http\Controllers\Admin\AdminLeaveController;
 use App\Http\Controllers\Admin\AdminPersonelController;
 use App\Http\Controllers\Admin\AdminLeaveTypeController;
 use App\Http\Controllers\Admin\AdminHolidayController;
-use App\Http\Controllers\Admin\AdminLetterController;
-use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminProfileController;
+
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\User\MarriageApplicationController;
 use App\Http\Controllers\Admin\AdminMarriageApplicationController;
@@ -42,7 +42,7 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::get('/leave/create', [UserLeaveController::class, 'create'])->name('leave.create');
     Route::get('/leave/template', [UserLeaveController::class, 'downloadPermohonanTemplate'])->name('leave.template');
     Route::get('/leave/template/permohonan', [UserLeaveController::class, 'downloadPermohonanTemplate'])->name('leave.template_permohonan');
-    Route::get('/leave/template/izin', [UserLeaveController::class, 'downloadIzinTemplate'])->name('leave.template_izin');
+
     Route::post('/leave/calculate', [UserLeaveController::class, 'calculateDays'])->name('leave.calculate');
     Route::post('/leave', [UserLeaveController::class, 'store'])->name('leave.store');
     Route::get('/leave/{id}', [UserLeaveController::class, 'show'])->name('leave.show');
@@ -80,6 +80,12 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
 // Admin / Staf Personalia Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/notifications/{id}/read', [AdminDashboardController::class, 'readNotification'])->name('notifications.read');
+    Route::post('/notifications/read-all', [AdminDashboardController::class, 'readAllNotifications'])->name('notifications.read_all');
+
+    // Profil Admin
+    Route::get('/profile', [AdminProfileController::class, 'show'])->name('profile');
+    Route::post('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
 
     // Verification Cuti
     Route::get('/leave', [AdminLeaveController::class, 'index'])->name('leave.index');
@@ -115,11 +121,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/personel/{id}',              [AdminPersonelController::class, 'update'])->name('personel.update');
     Route::delete('/personel/{id}',           [AdminPersonelController::class, 'destroy'])->name('personel.destroy');
 
-    // Pengguna Web (Akun Anggota)
-    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
-    Route::get('/users/{id}', [AdminUserController::class, 'show'])->name('users.show');
-    Route::post('/users/{id}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle_status');
-    Route::post('/users/{id}/link-personel', [AdminUserController::class, 'linkPersonel'])->name('users.link_personel');
+
 
     // Log Aktivitas
     Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity_logs.index');
@@ -134,15 +136,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/holidays', [AdminHolidayController::class, 'store'])->name('holidays.store');
     Route::delete('/holidays/{id}', [AdminHolidayController::class, 'destroy'])->name('holidays.destroy');
 
-    // Arsip Surat Intern
-    Route::get('/letters', [AdminLetterController::class, 'index'])->name('letters.index');
-    Route::post('/letters', [AdminLetterController::class, 'store'])->name('letters.store');
-    Route::get('/letters/{id}/secret', [AdminLetterController::class, 'showSecretVerify'])->name('letters.secret.verify_form');
-    Route::post('/letters/{id}/secret/verify', [AdminLetterController::class, 'verifySecret'])->name('letters.secret.verify');
-    Route::get('/letters/{id}/download', [AdminLetterController::class, 'download'])->name('letters.download');
-    Route::delete('/letters/{id}', [AdminLetterController::class, 'destroy'])->name('letters.destroy');
-    Route::get('/settings/secret-letter-password', [AdminLetterController::class, 'showPasswordForm'])->name('letters.settings.password');
-    Route::post('/settings/secret-letter-password', [AdminLetterController::class, 'updatePassword'])->name('letters.settings.password.update');
+
 
     // Pengaturan Template Persuratan
     Route::get('/templates', [\App\Http\Controllers\Admin\AdminTemplateController::class, 'index'])->name('templates.index');

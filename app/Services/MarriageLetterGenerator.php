@@ -152,6 +152,8 @@ class MarriageLetterGenerator
             'kabupaten_nikah' => $application->kabupaten_nikah ?? '',
             'provinsi_nikah' => $application->provinsi_nikah ?? '',
             'nama_kua' => $application->kua_tujuan ?? '',
+            'danramil_tujuan' => $application->danramil_tujuan ?? '',
+            'dandim_tujuan' => $application->dandim_tujuan ?? '',
             'tanggal_surat' => now()->locale('id')->isoFormat('D MMMM Y'),
             'bulan_surat' => now()->locale('id')->isoFormat('MMMM'),
             'tahun_surat' => now()->format('Y'),

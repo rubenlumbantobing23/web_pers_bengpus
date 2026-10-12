@@ -129,15 +129,6 @@
 
             <div class="table-responsive">
                 <table class="custom-table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 320px;">Unit / Subunit Kerja</th>
-                            <th style="width: 110px;">Kode</th>
-                            <th style="width: 110px;">Status</th>
-                            <th style="min-width: 280px;">Pejabat Penanggung Jawab</th>
-                            <th style="width: 180px; text-align: center;">Aksi</th>
-                        </tr>
-                    </thead>
                     <tbody>
                         @forelse($units as $unit)
                             @if(!$loop->first)

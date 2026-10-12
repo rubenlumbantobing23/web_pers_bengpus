@@ -41,7 +41,10 @@ class ProfileController extends Controller
 
         $rules = [
             'no_hp' => 'required|string|max:20',
-            'password' => 'nullable|string|min:6|confirmed',
+            'password' => 'nullable|string|min:8|confirmed',
+            'jenis_kelamin' => 'nullable|in:Pria,Wanita',
+            'status_pernikahan' => 'nullable|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
+            'tempat_lahir' => 'nullable|string|max:100',
         ];
 
         if (!$isPejabat) {
@@ -68,7 +71,20 @@ class ProfileController extends Controller
         }
 
         if ($personel) {
-            $updateData = ['no_hp' => $request->no_hp];
+            $updateData = [
+                'no_hp' => $request->no_hp,
+            ];
+            
+            if ($request->filled('jenis_kelamin')) {
+                $updateData['jenis_kelamin'] = $request->jenis_kelamin;
+            }
+            if ($request->filled('status_pernikahan')) {
+                $updateData['status_pernikahan'] = $request->status_pernikahan;
+            }
+            if ($request->filled('tempat_lahir')) {
+                $updateData['tempat_lahir'] = $request->tempat_lahir;
+            }
+
             if (!$isPejabat) {
                 $updateData['organization_unit_id'] = $request->organization_unit_id;
             }

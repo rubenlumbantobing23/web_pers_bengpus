@@ -165,6 +165,39 @@
         color: var(--text-muted); transition: color 0.3s ease; font-size: 1.1rem;
     }
     .input-wrapper input:focus + i { color: var(--primary); }
+    
+    /* Login Tabs */
+    .login-tabs {
+        display: flex;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .login-tab {
+        flex: 1;
+        text-align: center;
+        padding: 12px;
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .login-tab.active {
+        background: rgba(5, 150, 105, 0.2);
+        color: var(--primary);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.4s ease forwards;
+    }
 
     /* Responsive */
     @media (max-width: 900px) {
@@ -246,20 +279,42 @@
             </div>
         @endif
 
+        <div class="login-tabs">
+            <div class="login-tab active" id="tab-user" onclick="switchTab('user')">
+                <i class="fa-solid fa-user-shield"></i> Anggota (User)
+            </div>
+            <div class="login-tab" id="tab-admin" onclick="switchTab('admin')">
+                <i class="fa-solid fa-user-tie"></i> Admin
+            </div>
+        </div>
+
         <form action="{{ route('login') }}" method="POST">
             @csrf
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label class="form-label" for="login_id" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">NRP/NIP</label>
-                <div class="input-wrapper">
-                    <input type="text" id="login_id" name="login_id" placeholder="Masukkan NRP/NIP" value="{{ old('login_id') }}" required autofocus>
-                    <i class="fa-solid fa-user"></i>
+            
+            <div id="content-user" class="tab-content active">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" for="login_id_user" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">NRP / NIP</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="login_id_user" name="login_id" placeholder="Masukkan NRP atau NIP" value="{{ old('login_id') }}" autofocus autocapitalize="none" autocomplete="username">
+                        <i class="fa-solid fa-id-card"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-admin" class="tab-content">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label class="form-label" for="login_id_admin" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">Email Admin</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="login_id_admin" placeholder="Masukkan Email Admin" value="{{ old('login_id') }}" autocapitalize="none" autocomplete="username">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 24px;">
                 <label class="form-label" for="password" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 8px; display: block;">Kata Sandi</label>
                 <div class="input-wrapper" style="position: relative;">
-                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required autocapitalize="none" autocorrect="off">
                     <i class="fa-solid fa-lock" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%);"></i>
                     <i class="fa-solid fa-eye" id="togglePassword" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
                 </div>
@@ -271,6 +326,47 @@
                     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
                     passwordInput.setAttribute('type', type);
                     this.classList.toggle('fa-eye-slash');
+                });
+                
+                function switchTab(tabName) {
+                    // Update tab styling
+                    document.getElementById('tab-user').classList.remove('active');
+                    document.getElementById('tab-admin').classList.remove('active');
+                    document.getElementById('tab-' + tabName).classList.add('active');
+                    
+                    // Update content visibility
+                    document.getElementById('content-user').classList.remove('active');
+                    document.getElementById('content-admin').classList.remove('active');
+                    document.getElementById('content-' + tabName).classList.add('active');
+                    
+                    // Update names for form submission (only submit the active one)
+                    const userField = document.getElementById('login_id_user');
+                    const adminField = document.getElementById('login_id_admin');
+                    
+                    if (tabName === 'user') {
+                        userField.name = 'login_id';
+                        userField.required = true;
+                        adminField.name = '';
+                        adminField.required = false;
+                        userField.focus();
+                    } else {
+                        adminField.name = 'login_id';
+                        adminField.required = true;
+                        userField.name = '';
+                        userField.required = false;
+                        adminField.focus();
+                    }
+                }
+                
+                // Initialize based on old input (if email was entered previously)
+                document.addEventListener('DOMContentLoaded', function() {
+                    const oldVal = "{{ old('login_id') }}";
+                    if (oldVal && oldVal.includes('@')) {
+                        switchTab('admin');
+                        document.getElementById('login_id_admin').value = oldVal;
+                    } else {
+                        switchTab('user'); // Ensure proper init
+                    }
                 });
             </script>
 

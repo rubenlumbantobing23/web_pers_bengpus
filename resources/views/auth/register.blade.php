@@ -273,7 +273,7 @@
                     <div class="form-group">
                         <label class="form-label" for="password" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Password *</label>
                         <div style="position: relative;">
-                            <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 karakter" required style="padding-right: 40px;" autocomplete="new-password">
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Min. 6 karakter" required style="padding-right: 40px;" autocomplete="new-password" autocapitalize="none">
                             <i class="fa-solid fa-eye" id="togglePasswordReg" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                         </div>
                     </div>
@@ -281,7 +281,7 @@
                     <div class="form-group">
                         <label class="form-label" for="password_confirmation" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Konfirmasi *</label>
                         <div style="position: relative;">
-                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required style="padding-right: 40px;" autocomplete="new-password">
+                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password" required style="padding-right: 40px;" autocomplete="new-password" autocapitalize="none">
                             <i class="fa-solid fa-eye" id="togglePasswordConf" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password_confirmation'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                         </div>
                     </div>

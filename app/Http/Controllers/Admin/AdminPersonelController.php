@@ -93,21 +93,30 @@ class AdminPersonelController extends Controller
             'kategori_personel'=> 'required|string|in:Perwira Menengah,Perwira Pertama,Bintara,Tamtama,PNS',
             'pangkat_golongan' => 'required|string|max:100',
             'jabatan'          => 'required|string|max:150',
-            'satuan_bagian'    => 'required|string|max:150',
+            'satuan_bagian'    => 'nullable|string|max:150',
             'organization_unit_id' => 'nullable|exists:organization_units,id',
             'no_hp'            => 'nullable|string|max:20',
             'email'            => 'nullable|email|unique:users,email|unique:personels,email',
             'password'         => 'nullable|string|min:6',
-            'tgl_lahir'        => 'nullable|date',
-            'status_pernikahan'=> 'nullable|string|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
+            'tgl_lahir'        => 'required|date',
+            'status_pernikahan'=> 'required|string|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
+            'jenis_kelamin'    => 'required|in:Pria,Wanita',
+            'tempat_lahir'     => 'required|string|max:100',
+            'agama'            => 'required|string|max:100',
+            'suku'             => 'required|string|max:100',
         ]);
 
         $user = null;
-        if ($request->boolean('create_user') && $request->filled('email')) {
+        if ($request->boolean('create_user')) {
+            $request->validate([
+                'password' => 'required|string|min:8',
+                'email'    => 'required|email|unique:users,email',
+            ]);
+
             $user = User::create([
                 'name'     => $request->nama,
                 'email'    => $request->email,
-                'password' => Hash::make($request->password ?: 'password'),
+                'password' => Hash::make($request->password),
                 'role'     => 'user',
             ]);
             LeaveEntitlement::create([
@@ -164,13 +173,17 @@ class AdminPersonelController extends Controller
             'kategori_personel'=> 'required|string|in:Perwira Menengah,Perwira Pertama,Bintara,Tamtama,PNS',
             'pangkat_golongan' => 'required|string|max:100',
             'jabatan'          => 'required|string|max:150',
-            'satuan_bagian'    => 'required|string|max:150',
+            'satuan_bagian'    => 'nullable|string|max:150',
             'organization_unit_id' => 'nullable|exists:organization_units,id',
             'no_hp'            => 'nullable|string|max:20',
             'email'            => 'nullable|email|unique:personels,email,' . $id,
             'status_aktif'     => 'required|boolean',
-            'tgl_lahir'        => 'nullable|date',
-            'status_pernikahan'=> 'nullable|string|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
+            'tgl_lahir'        => 'required|date',
+            'status_pernikahan'=> 'required|string|in:Belum Menikah,Menikah,Cerai Hidup,Cerai Mati',
+            'jenis_kelamin'    => 'required|in:Pria,Wanita',
+            'tempat_lahir'     => 'required|string|max:100',
+            'agama'            => 'required|string|max:100',
+            'suku'             => 'required|string|max:100',
         ]);
 
         $dataToUpdate = array_merge(
@@ -537,7 +550,7 @@ class AdminPersonelController extends Controller
             'tmt_jabatan'           => $r->tmt_jabatan,
             'tmt_tni_pa'            => $r->tmt_tni_pa,
             'mkg'                   => $r->mkg,
-            'agama_suku'            => $r->agama_suku,
+            'agama_suku'            => trim(($r->agama ?? '') . "\n" . ($r->suku ?? '')),
             'tgl_lahir'             => $r->tgl_lahir ?: null,
             'tempat_lahir'          => $r->tempat_lahir,
             'jenis_kelamin'         => $r->jenis_kelamin,

@@ -52,18 +52,24 @@ class AdminLeaveController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+
         $request->validate([
             'status' => 'required|in:approved,rejected,cancelled',
             'rejection_reason' => 'required_if:status,rejected|nullable|string|max:1000',
-            'approved_days' => 'nullable|integer|min:1',
+            'approved_days' => 'nullable|integer|min:1|max:' . $leaveRequest->working_days_count,
             'approved_notes' => 'nullable|string|max:500',
             'signing_option' => 'nullable|in:kabeng,waka_an_kabeng,wakabeng',
         ], [
             'rejection_reason.required_if' => 'Alasan penolakan wajib diisi jika pengajuan ditolak.',
             'approved_days.min' => 'Jumlah hari yang disetujui minimal 1 hari.',
+            'approved_days.max' => 'Jumlah hari yang disetujui tidak boleh melebihi hari kerja yang diajukan (' . $leaveRequest->working_days_count . ' hari).',
         ]);
 
-        $leaveRequest = LeaveRequest::findOrFail($id);
+        if (in_array($leaveRequest->status, ['approved', 'rejected', 'cancelled'])) {
+            return redirect()->route('admin.leave.show', $id)
+                ->with('error', 'Pengajuan sudah dalam status final (' . $leaveRequest->status . ') dan tidak dapat diubah lagi melalui form ini.');
+        }
 
         $updateData = [
             'status' => $request->status,
@@ -71,61 +77,110 @@ class AdminLeaveController extends Controller
             'approved_by' => Auth::id(),
             'approved_at' => now(),
         ];
-
         if ($request->status === 'approved') {
-            // Default ke working_days_count jika admin tidak mengisi approved_days
-            $updateData['approved_days'] = $request->filled('approved_days')
-                ? (int) $request->approved_days
-                : $leaveRequest->working_days_count;
+            // Validate and limit approved_days
+            $approvedDays = $request->filled('approved_days') ? (int) $request->approved_days : $leaveRequest->working_days_count;
+            if ($approvedDays < 1 || $approvedDays > $leaveRequest->working_days_count) {
+                return redirect()->route('admin.leave.show', $id)
+                    ->with('error', "Jumlah hari disetujui tidak valid. Harus antara 1 hingga {$leaveRequest->working_days_count} hari.");
+            }
+
+            $updateData['approved_days'] = $approvedDays;
             $updateData['approved_notes'] = $request->approved_notes;
+            $updateData['approved_end_date'] = \App\Helpers\LeaveCalculator::calculateEndDate($leaveRequest->start_date, $approvedDays);
         } else {
-            // Reset approved_days jika ditolak/dibatalkan
+            // Reset approved fields jika ditolak/dibatalkan
             $updateData['approved_days'] = null;
             $updateData['approved_notes'] = null;
+            $updateData['approved_end_date'] = null;
         }
 
-        $leaveRequest->update($updateData);
+        $shouldNotify = false;
+        $savedFilePaths = [];
 
-// Kirim notifikasi kepada anggota pemilik pengajuan cuti
-if ($leaveRequest->user) {
-    $leaveRequest->user->notify(
-        new LeaveStatusNotification(
-            $leaveRequest->load('leaveType'),
-            $request->status
-        )
-    );
-}
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($id, &$leaveRequest, $updateData, $request, &$shouldNotify, &$savedFilePaths) {
+                // 1. Lock the specific leave request row to prevent concurrent decisions
+                $lockedLeaveRequest = LeaveRequest::where('id', $id)->lockForUpdate()->first();
+                
+                // 2. Re-evaluate if status is still valid after lock
+                if (in_array($lockedLeaveRequest->status, ['approved', 'rejected', 'cancelled'])) {
+                    throw new \Exception("STATUS_ALREADY_FINAL:{$lockedLeaveRequest->status}");
+                }
 
-$statusLabel = $request->status === 'approved'
-            ? 'disetujui'
-            : ($request->status === 'rejected' ? 'ditolak' : 'dibatalkan');
+                // 3. Update the request
+                $lockedLeaveRequest->update($updateData);
 
-        \App\Helpers\ActivityLogger::log('Update Status Cuti', "Mengubah status cuti ({$leaveRequest->request_number}) menjadi {$statusLabel}");
+                // 4. Generate document if approved
+                if ($request->status === 'approved') {
+                    $path = $this->generateSuratCuti($lockedLeaveRequest->id, $request->signing_option);
+                    if ($path && is_string($path)) {
+                        $savedFilePaths[] = $path;
+                    }
+                    \App\Helpers\ActivityLogger::log('Update Status Cuti', "Menyetujui cuti ({$lockedLeaveRequest->request_number}) dan menerbitkan surat resmi");
+                } else {
+                    $statusLabel = $request->status === 'rejected' ? 'ditolak' : 'dibatalkan';
+                    \App\Helpers\ActivityLogger::log('Update Status Cuti', "Mengubah status cuti ({$lockedLeaveRequest->request_number}) menjadi {$statusLabel}");
+                }
+                
+                // 5. Update reference for notification outside transaction
+                $leaveRequest = $lockedLeaveRequest;
+                $shouldNotify = true;
+            });
 
-        if ($request->status === 'approved') {
-            try {
-                $this->generateSuratCuti($leaveRequest->id, $request->signing_option);
-                return redirect()->route('admin.leave.show', $id)
-                    ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} berhasil diperbarui menjadi disetujui dan Surat Cuti otomatis diterbitkan.");
-            } catch (\Exception $e) {
-                return redirect()->route('admin.leave.show', $id)
-                    ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} disetujui.")
-                    ->with('error', "Namun gagal menerbitkan surat otomatis: " . $e->getMessage());
+            // Transaction committed. Safely send notifications.
+            if ($shouldNotify && $leaveRequest->user) {
+                try {
+                    $leaveRequest->user->notify(new LeaveStatusNotification($leaveRequest->load('leaveType'), $request->status));
+                } catch (\Exception $e) {
+                    \Log::error('Gagal mengirim notifikasi cuti: ' . $e->getMessage());
+                    // Notifikasi gagal tidak membatalkan surat/status yang sudah berhasil disetujui.
+                }
             }
-        }
 
-        return redirect()->route('admin.leave.show', $id)
-            ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} berhasil diperbarui menjadi {$statusLabel}.");
+            $statusLabel = $request->status === 'approved' ? 'disetujui dan Surat Cuti resmi diterbitkan' : ($request->status === 'rejected' ? 'ditolak' : 'dibatalkan');
+            return redirect()->route('admin.leave.show', $id)
+                ->with('success', "Status pengajuan cuti {$leaveRequest->request_number} berhasil diperbarui menjadi {$statusLabel}.");
+
+        } catch (\Exception $e) {
+            // Transaction rolled back. Clean up orphaned files if any.
+            foreach ($savedFilePaths as $path) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+            }
+
+            if (str_starts_with($e->getMessage(), "STATUS_ALREADY_FINAL:")) {
+                $parts = explode(":", $e->getMessage());
+                return redirect()->route('admin.leave.show', $id)
+                    ->with('error', 'Pengajuan telah diproses oleh admin lain dan kini berstatus final (' . $parts[1] . ').');
+            }
+
+            \Log::error('Gagal memperbarui status cuti: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->route('admin.leave.show', $id)
+                ->with('error', "Gagal memperbarui pengajuan: " . ($request->status === 'approved' ? "Surat resmi tidak dapat diterbitkan atau terjadi kesalahan teknis." : "Terjadi kesalahan teknis saat menyimpan data."));
+        }
     }
 
     public function issueSuratCuti(Request $request, $id)
     {
+        $savedFilePath = null;
         try {
-            $this->generateSuratCuti($id, $request->signing_option);
+            \Illuminate\Support\Facades\DB::transaction(function () use ($id, $request, &$savedFilePath) {
+                // Lock baris pengajuan untuk mencegah duplikasi (race condition)
+                $lockedLeaveRequest = \App\Models\LeaveRequest::lockForUpdate()->findOrFail($id);
+                $path = $this->generateSuratCuti($lockedLeaveRequest->id, $request->signing_option);
+                if ($path && is_string($path)) {
+                    $savedFilePath = $path;
+                }
+            });
+
             return redirect()->route('admin.leave.show', $id)
                 ->with('success', 'Surat Cuti Resmi berhasil diterbitkan.');
         } catch (\Exception $e) {
-            return back()->with('error', $e->getMessage());
+            if ($savedFilePath) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($savedFilePath);
+            }
+            \Log::error('Gagal menerbitkan ulang surat cuti: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Gagal menerbitkan surat resmi: Terjadi kesalahan teknis atau surat sudah pernah diterbitkan.');
         }
     }
 
@@ -140,7 +195,12 @@ $statusLabel = $request->status === 'approved'
         // Prevent duplicate generation (just in case UI bugs out)
         $existingLetter = LeaveOfficialLetter::where('leave_request_id', $id)->first();
         if ($existingLetter) {
-            return true;
+            if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($existingLetter->file_path) && !\Illuminate\Support\Facades\Storage::disk('public')->exists($existingLetter->file_path)) {
+                // File hilang, hapus record yatim dan regenerasi
+                $existingLetter->delete();
+            } else {
+                throw new \Exception('Surat Cuti sudah pernah diterbitkan. Sistem tidak menimpa surat lama secara otomatis.');
+            }
         }
 
         $user = $leaveRequest->user;
@@ -195,9 +255,13 @@ $statusLabel = $request->status === 'approved'
         $corps_pemohon = $personel ? trim($personel->corps ?: '-') : '-';
         
         $leaveTypeName = $leaveRequest->leaveType ? $leaveRequest->leaveType->name : 'Cuti Tahunan';
-        $totalDays = \Carbon\Carbon::parse($leaveRequest->start_date)->diffInDays(\Carbon\Carbon::parse($leaveRequest->end_date)) + 1;
+        
+        // Use approved_days if available, otherwise fallback to working_days_count
+        $totalDays = $leaveRequest->approved_days ?? $leaveRequest->working_days_count;
+        
         $startDateStr = \Carbon\Carbon::parse($leaveRequest->start_date)->locale('id')->isoFormat('D MMMM Y');
-        $endDateStr = \Carbon\Carbon::parse($leaveRequest->end_date)->locale('id')->isoFormat('D MMMM Y');
+        $endDateRaw = $leaveRequest->approved_end_date ?? $leaveRequest->end_date;
+        $endDateStr = \Carbon\Carbon::parse($endDateRaw)->locale('id')->isoFormat('D MMMM Y');
         
         $tglPengajuanStr = \Carbon\Carbon::parse($leaveRequest->created_at)->locale('id')->isoFormat('D MMMM Y');
         $tglTerbitStr = now()->locale('id')->isoFormat('D MMMM Y');
@@ -297,27 +361,37 @@ $statusLabel = $request->status === 'approved'
         }
 
         $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $nama_pemohon);
-        $fileName = time() . '_Surat_Cuti_' . ($cleanName ?: 'Anggota') . '.docx';
+        $fileName = \Illuminate\Support\Str::uuid() . '_Surat_Cuti_' . ($cleanName ?: 'Anggota') . '.docx';
         $savePath = 'official_letters/' . $fileName;
         
         $tempFile = tempnam(sys_get_temp_dir(), 'phpword');
         $templateProcessor->saveAs($tempFile);
         
-        Storage::disk('local')->put($savePath, file_get_contents($tempFile));
+        $saved = Storage::disk('local')->put($savePath, file_get_contents($tempFile));
         @unlink($tempFile);
 
-        LeaveOfficialLetter::create([
-            'leave_request_id' => $leaveRequest->id,
-            'template_used' => $templateType,
-            'signing_option' => $signingOption,
-            'snapshot_data' => $snapshot,
-            'file_path' => $savePath,
-            'issued_at' => $issuedAt,
-        ]);
+        if (!$saved) {
+            throw new \Exception('Gagal menyimpan file surat cuti ke server.');
+        }
 
-        \App\Helpers\ActivityLogger::log('Terbit Surat Cuti', "Menerbitkan Surat Cuti Resmi untuk {$nama_pemohon}");
+        try {
+            LeaveOfficialLetter::create([
+                'leave_request_id' => $leaveRequest->id,
+                'template_used' => $templateType,
+                'signing_option' => $signingOption,
+                'snapshot_data' => $snapshot,
+                'file_path' => $savePath,
+                'issued_at' => $issuedAt,
+            ]);
 
-        return true;
+            \App\Helpers\ActivityLogger::log('Terbit Surat Cuti', "Menerbitkan Surat Cuti Resmi untuk {$nama_pemohon}");
+        } catch (\Exception $e) {
+            // Hapus file orphan jika penyimpanan record ke DB gagal atau logging gagal
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($savePath);
+            throw $e;
+        }
+
+        return $savePath;
     }
 
     public function downloadSuratCuti($id)
@@ -331,11 +405,15 @@ $statusLabel = $request->status === 'approved'
             abort(404, 'File Surat Cuti Resmi tidak ditemukan di server.');
         }
 
+        $leaveRequest = $letter->leaveRequest;
+        $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $leaveRequest->user->personel->nama ?? $leaveRequest->user->name);
+        $downloadName = "Surat_Cuti_" . ($cleanName ?: 'Anggota') . ".docx";
+
         if (!Storage::disk('local')->exists($letter->file_path) && Storage::disk('public')->exists($letter->file_path)) {
-            return Storage::disk('public')->download($letter->file_path);
+            return Storage::disk('public')->download($letter->file_path, $downloadName);
         }
 
-        return Storage::disk('local')->download($letter->file_path);
+        return Storage::disk('local')->download($letter->file_path, $downloadName);
     }
 
     public function downloadDocument($id, $docId)

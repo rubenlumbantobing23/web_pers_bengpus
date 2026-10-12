@@ -86,7 +86,20 @@
                                     </div>
                                 </td>
                                 <td>{{ $req->leaveType->name }}</td>
-                                <td>{{ $req->start_date->format('d/m/Y') }} - {{ $req->end_date->format('d/m/Y') }}</td>
+                                <td>
+                                    {{ $req->start_date->format('d/m/Y') }} - 
+                                    @if($req->status === 'approved')
+                                        @if($req->approved_end_date)
+                                            {{ \Carbon\Carbon::parse($req->approved_end_date)->format('d/m/Y') }}
+                                        @elseif(!is_null($req->approved_days) && $req->approved_days < $req->working_days_count)
+                                            <span title="Data lama (belum tercatat)" style="color: #fca5a5; font-size: 0.85rem;">[Tinjau]</span>
+                                        @else
+                                            {{ $req->end_date->format('d/m/Y') }}
+                                        @endif
+                                    @else
+                                        {{ $req->end_date->format('d/m/Y') }}
+                                    @endif
+                                </td>
                                 <td><strong style="color: #34d399;">{{ $req->status === 'approved' ? ($req->approved_days ?? $req->working_days_count) : $req->working_days_count }} Hari</strong></td>
                                 <td>{{ $req->created_at->format('d M Y H:i') }}</td>
                                 <td>

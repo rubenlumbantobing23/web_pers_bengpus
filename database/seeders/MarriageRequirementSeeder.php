@@ -16,7 +16,7 @@ class MarriageRequirementSeeder extends Seeder
             ['title' => 'SKCK Calon Suami/Istri', 'description' => 'Surat Keterangan Catatan Kepolisian', 'is_required' => true],
             ['title' => 'Surat Keterangan Kesehatan & Imunisasi TT', 'description' => 'Dari Puskesmas / Rumah Sakit Tentara', 'is_required' => true],
             ['title' => 'Pas Foto Bersama Pakaian Dinas Harian (PDH) (Ukuran 4x6, 6 lembar)', 'description' => 'Latar belakang merah', 'is_required' => true],
-            ['title' => 'Fotokopi KTP, KK, & Akta Kelahiran Calon Mempelai', 'description' => 'Masing-masing 2 lembar', 'is_required' => true],
+            ['title' => 'KTP, KK, & Akta Kelahiran Calon Mempelai', 'description' => 'Masing-masing 2 lembar', 'is_required' => true],
         ];
 
         foreach ($requirements as $req) {

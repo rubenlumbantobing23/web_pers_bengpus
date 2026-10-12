@@ -69,7 +69,23 @@
                                     <span style="font-weight: 600; color: #f8fafc;">{{ $req->leaveType->name }}</span>
                                 </td>
                                 <td>{{ $req->start_date->format('d M Y') }}</td>
-                                <td>{{ $req->end_date->format('d M Y') }}</td>
+                                <td>
+                                    @if($req->status === 'approved')
+                                        @if($req->approved_end_date)
+                                            <span title="Disetujui hingga {{ \Carbon\Carbon::parse($req->approved_end_date)->format('d M Y') }}">
+                                                {{ \Carbon\Carbon::parse($req->approved_end_date)->format('d M Y') }}
+                                            </span>
+                                        @elseif(!is_null($req->approved_days) && $req->approved_days < $req->working_days_count)
+                                            <span title="Data lama (belum tercatat), silakan hubungi admin" style="color: #fca5a5; font-size: 0.85rem;">
+                                                Perlu Tinjauan
+                                            </span>
+                                        @else
+                                            {{ $req->end_date->format('d M Y') }}
+                                        @endif
+                                    @else
+                                        {{ $req->end_date->format('d M Y') }}
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="badge" style="background: rgba(5, 150, 105, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
                                         {{ $req->status === 'approved' ? ($req->approved_days ?? $req->working_days_count) : $req->working_days_count }} Hari

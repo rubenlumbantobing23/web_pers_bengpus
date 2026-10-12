@@ -96,6 +96,7 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
             transition: all 0.25s ease;
+            text-decoration: none;
         }
 
         .btn-military:hover {
@@ -105,6 +106,10 @@
         }
 
         .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-main);
             border: 1px solid var(--border-color);
@@ -113,6 +118,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s ease;
+            text-decoration: none;
         }
 
         .btn-secondary:hover {
@@ -121,6 +127,10 @@
         }
 
         .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             color: #ffffff;
             font-weight: 600;
@@ -129,6 +139,7 @@
             border: none;
             cursor: pointer;
             transition: all 0.2s ease;
+            text-decoration: none;
         }
 
         .btn-danger:hover {
@@ -233,6 +244,16 @@
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.3);
             color: #f87171;
+        }
+        
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; visibility: hidden; }
         }
 
         /* Tables */
@@ -390,6 +411,22 @@
                     form.requestSubmit();
                 }
             });
+        });
+        
+        // Preserve scroll position on form submissions
+        document.addEventListener("submit", function() {
+            sessionStorage.setItem('scrollpos_' + window.location.pathname, window.scrollY);
+        });
+        
+        document.addEventListener("DOMContentLoaded", function() { 
+            const scrollKey = 'scrollpos_' + window.location.pathname;
+            const scrollpos = sessionStorage.getItem(scrollKey);
+            if (scrollpos !== null) {
+                setTimeout(() => {
+                    window.scrollTo({ top: parseInt(scrollpos), behavior: 'instant' });
+                }, 10);
+                sessionStorage.removeItem(scrollKey);
+            }
         });
     </script>
     @stack('scripts')

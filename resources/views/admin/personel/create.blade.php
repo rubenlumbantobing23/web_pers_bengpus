@@ -64,16 +64,16 @@
                     <input type="text" id="nrp_nip" name="nrp_nip" class="form-control" value="{{ old('nrp_nip') }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin</label>
-                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control">
+                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin *</label>
+                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
                         <option value="">-- Pilih --</option>
                         <option value="Pria" {{ old('jenis_kelamin') == 'Pria' ? 'selected' : '' }}>Pria</option>
                         <option value="Wanita" {{ old('jenis_kelamin') == 'Wanita' ? 'selected' : '' }}>Wanita</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="status_pernikahan">Status Pernikahan</label>
-                    <select id="status_pernikahan" name="status_pernikahan" class="form-control">
+                    <label class="form-label" for="status_pernikahan">Status Pernikahan *</label>
+                    <select id="status_pernikahan" name="status_pernikahan" class="form-control" required>
                         <option value="">-- Pilih --</option>
                         <option value="Belum Menikah" {{ old('status_pernikahan') == 'Belum Menikah' ? 'selected' : '' }}>Belum Menikah</option>
                         <option value="Menikah" {{ old('status_pernikahan') == 'Menikah' ? 'selected' : '' }}>Menikah</option>
@@ -82,17 +82,20 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="tgl_lahir">Tanggal Lahir</label>
-                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir') }}">
+                    <label class="form-label" for="tgl_lahir">Tanggal Lahir *</label>
+                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir') }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="tempat_lahir">Tempat Lahir</label>
-                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir') }}">
+                    <label class="form-label" for="tempat_lahir">Tempat Lahir *</label>
+                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir') }}" required>
                 </div>
-                <div class="form-group" style="grid-column:span 2;">
-                    <label class="form-label" for="agama_suku">Agama / Suku (pisah dengan baris baru)</label>
-                    <textarea id="agama_suku" name="agama_suku" class="form-control" rows="2"
-                        placeholder="Contoh baris 1: Islam&#10;Baris 2: Jawa">{{ old('agama_suku') }}</textarea>
+                <div class="form-group">
+                    <label class="form-label" for="agama">Agama *</label>
+                    <input type="text" id="agama" name="agama" class="form-control" value="{{ old('agama') }}" placeholder="Contoh: Islam" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="suku">Suku *</label>
+                    <input type="text" id="suku" name="suku" class="form-control" value="{{ old('suku') }}" placeholder="Contoh: Jawa" required>
                 </div>
             </div>
         </div>
@@ -137,6 +140,10 @@
                 <div class="form-group">
                     <label class="form-label" for="tmt_jabatan">TMT Jabatan</label>
                     <input type="text" id="tmt_jabatan" name="tmt_jabatan" class="form-control" value="{{ old('tmt_jabatan') }}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="satuan_bagian">Satuan / Bagian</label>
+                    <input type="text" id="satuan_bagian" name="satuan_bagian" class="form-control" value="{{ old('satuan_bagian') ?? 'Bengpuskomlekad' }}">
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="organization_unit_id">Atasan Langsung *</label>
@@ -220,25 +227,53 @@
                     <input type="text" id="no_hp" name="no_hp" class="form-control" placeholder="08123456789" value="{{ old('no_hp') }}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="email">Alamat Email</label>
-                    <input type="email" id="email" name="email" class="form-control" value="{{ old('email') }}">
+                    <label class="form-label" for="email" id="label-email">Alamat Email *</label>
+                    <input type="email" id="email" name="email" class="form-control" value="{{ old('email') }}" required autocomplete="off">
                     <small class="text-muted" style="color: rgba(255, 255, 255, 0.5) !important;">Email digunakan untuk reset password dan menerima notifikasi sistem.</small>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="password">Password Akun</label>
+                    <label class="form-label" for="password" id="label-password">Password Akun *</label>
                     <div style="position: relative;">
-                        <input type="password" id="password" name="password" class="form-control" placeholder="Kosongkan jika tidak buat akun" style="padding-right: 40px;">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Isi password untuk akun" style="padding-right: 40px;" required autocomplete="new-password" autocapitalize="none">
                         <i class="fa-solid fa-eye" id="togglePasswordCreate" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                     </div>
                 </div>
                 <div class="form-group" style="display:flex; align-items:center; gap:10px; padding-top:26px;">
                     <label style="display:flex; align-items:center; gap:10px; cursor:pointer; color:#fff; font-weight:600; font-size:0.9rem;">
-                        <input type="checkbox" name="create_user" value="1" checked style="accent-color:var(--primary); width:18px; height:18px;">
+                        <input type="checkbox" id="create_user_checkbox" name="create_user" value="1" checked style="accent-color:var(--primary); width:18px; height:18px;">
                         Otomatis buat akun user login & jatah cuti 12 hari
                     </label>
                 </div>
             </div>
         </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", function() {
+                const checkbox = document.getElementById('create_user_checkbox');
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                const emailLabel = document.getElementById('label-email');
+                const passwordLabel = document.getElementById('label-password');
+
+                function toggleRequired() {
+                    if (checkbox.checked) {
+                        emailInput.required = true;
+                        passwordInput.required = true;
+                        emailLabel.innerHTML = 'Alamat Email *';
+                        passwordLabel.innerHTML = 'Password Akun *';
+                        passwordInput.placeholder = 'Isi password untuk akun';
+                    } else {
+                        emailInput.required = false;
+                        passwordInput.required = false;
+                        emailLabel.innerHTML = 'Alamat Email';
+                        passwordLabel.innerHTML = 'Password Akun';
+                        passwordInput.placeholder = 'Kosongkan jika tidak buat akun';
+                    }
+                }
+
+                checkbox.addEventListener('change', toggleRequired);
+            });
+        </script>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
             <a href="{{ route('admin.personel.index') }}" class="btn-secondary">Batal</a>

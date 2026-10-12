@@ -162,7 +162,7 @@
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label class="form-label" for="password" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Kata Sandi Baru</label>
                     <div class="input-wrapper">
-                        <input type="password" id="password" name="password" placeholder="••••••••" required autofocus style="padding-right: 40px;">
+                        <input type="password" id="password" name="password" placeholder="••••••••" required autofocus style="padding-right: 40px;" autocapitalize="none">
                         <i class="fa-solid fa-lock"></i>
                         <i class="fa-solid fa-eye" id="togglePasswordReset" style="position: absolute; right: 20px; left: auto; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                     </div>
@@ -171,7 +171,7 @@
                 <div class="form-group" style="margin-bottom: 32px;">
                     <label class="form-label" for="password_confirmation" style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; display: block;">Konfirmasi Kata Sandi Baru</label>
                     <div class="input-wrapper">
-                        <input type="password" id="password_confirmation" name="password_confirmation" placeholder="••••••••" required style="padding-right: 40px;">
+                        <input type="password" id="password_confirmation" name="password_confirmation" placeholder="••••••••" required style="padding-right: 40px;" autocapitalize="none">
                         <i class="fa-solid fa-lock"></i>
                         <i class="fa-solid fa-eye" id="togglePasswordResetConf" style="position: absolute; right: 20px; left: auto; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password_confirmation'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                     </div>

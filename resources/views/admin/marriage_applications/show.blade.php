@@ -14,6 +14,48 @@ $partner = $application->partner;
 @endphp
 
 <style>
+    /* Interactivity enhancements */
+    .interactive-card {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
+    }
+    .interactive-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+        border-color: rgba(255,255,255,0.2);
+    }
+    .btn-interactive {
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-interactive:hover:not([disabled]) {
+        transform: translateY(-1px) scale(1.02);
+        filter: brightness(1.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-interactive:active:not([disabled]) {
+        transform: translateY(0) scale(0.98);
+    }
+
+    /* Layout grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    @media (min-width: 992px) {
+        .dashboard-grid.two-cols {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    /* Alert animation */
+    @keyframes slideInDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animated-alert {
+        animation: slideInDown 0.4s ease-out forwards;
+    }
+
     .masonry-layout {
         display: flex;
         flex-direction: column;
@@ -27,11 +69,12 @@ $partner = $application->partner;
     .partner-card { order: 2; }
     .plan-card { order: 3; }
     .workflow-stage { order: 4; }
-    .workflow-status { order: 5; }
-    .archive-card { order: 6; }
-    .cover-card { order: 7; }
-    .final-card { order: 8; }
-    .history-card { order: 9; }
+    .workflow-stage-2 { order: 5; }
+    .workflow-status { order: 6; }
+    .archive-card { order: 7; }
+    .cover-card { order: 8; }
+    .final-card { order: 9; }
+    .history-card { order: 10; }
     .detail-card-title {
         font-size: 1.15rem;
         color: var(--accent-gold);
@@ -65,6 +108,8 @@ $partner = $application->partner;
         </span>
     </div>
 
+
+
     {{-- MASONRY LAYOUT --}}
     <div class="masonry-layout">
 
@@ -72,7 +117,7 @@ $partner = $application->partner;
         <div class="masonry-col">
 
             {{-- Data Anggota --}}
-            <div class="glass-card member-card">
+            <div class="glass-card interactive-card member-card">
                 <h3 class="detail-card-title">
                     <i class="fa-solid fa-user-shield"></i> Data Anggota
                 </h3>
@@ -96,7 +141,7 @@ $partner = $application->partner;
             </div>
 
             {{-- Rencana Pernikahan --}}
-            <div class="glass-card plan-card">
+            <div class="glass-card interactive-card plan-card">
                 <h3 class="detail-card-title">
                     <i class="fa-solid fa-calendar-day"></i> Rencana Pernikahan
                 </h3>
@@ -112,74 +157,6 @@ $partner = $application->partner;
             </div>
 
 
-            {{-- Surat Pengantar --}}
-            @if(in_array($application->status, ['PENGAJUAN_DISETUJUI', 'PERLU_PERBAIKAN', 'DIVERIFIKASI', 'DISETUJUI', 'SELESAI']))
-            <div class="glass-card cover-card">
-                <h3 class="detail-card-title">
-                    <i class="fa-solid fa-file-signature"></i> Surat Pengantar
-                </h3>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    @foreach($coverLetters as $cover)
-                    @php
-                        $letter = $application->letters->where('jenis_surat', $cover->code)->first();
-                        $letterAvailable = $letter && \Illuminate\Support\Facades\Storage::disk('private')->exists($letter->file_generated);
-                    @endphp
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.07);">
-                        <div>
-                            <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">{{ $cover->name }}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
-                                @if($letterAvailable)
-                                    Dibuat: {{ $letter->generated_at?->format('d M Y H:i') }}
-                                @else
-                                    <span style="color: #fbbf24;">Menunggu template</span>
-                                @endif
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 6px;">
-                            @if($letterAvailable)
-                            <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $letter->id]) }}" class="btn-military" style="font-size: 0.75rem; padding: 6px 12px;" title="Download Surat">
-                                <i class="fa-solid fa-download"></i>
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
-            {{-- Surat Izin Nikah Final --}}
-            @if(in_array($application->status, ['DISETUJUI', 'SELESAI']))
-            <div class="glass-card final-card">
-                <h3 class="detail-card-title">
-                    <i class="fa-solid fa-stamp"></i> Surat Izin Nikah Final
-                </h3>
-                @php
-                    $finalLetter = $application->letters->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')->first();
-                    $finalLetterAvailable = $finalLetter && \Illuminate\Support\Facades\Storage::disk('private')->exists($finalLetter->file_generated);
-                @endphp
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid rgba(255,255,255,0.07);">
-                    <div>
-                        <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">Surat Izin Nikah Final</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
-                            @if($finalLetterAvailable)
-                                Status: <span style="color: #34d399;">{{ $application->status === 'SELESAI' ? 'Selesai' : 'Tersedia' }}</span><br>
-                                Dibuat: {{ $finalLetter->generated_at?->format('d M Y H:i') }}
-                            @else
-                                Status: <span style="color: #fbbf24;">Menunggu template</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                        @if($finalLetterAvailable)
-                        <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $finalLetter->id]) }}" class="btn-military" style="font-size: 0.75rem; padding: 10px 14px;" title="Download Surat Izin Nikah Final">
-                            <i class="fa-solid fa-download" style="margin-right: 6px;"></i> Download
-                        </a>
-                        @endif
-                    </div>
-                </div>
-            </div>
-            @endif
 
         </div>
 
@@ -188,7 +165,7 @@ $partner = $application->partner;
 
             {{-- Data Pasangan --}}
             @if($partner)
-        <div class="glass-card partner-card">
+        <div class="glass-card interactive-card partner-card">
                 <h3 class="detail-card-title">
                     <i class="fa-solid fa-user-heart"></i> Data {{ $partner->peran }}
                 </h3>
@@ -212,58 +189,62 @@ $partner = $application->partner;
                 </div>
             </div>
             @else
-            <div class="glass-card partner-card" style="display: flex; align-items: center; justify-content: center; padding: 40px;">
+            <div class="glass-card interactive-card partner-card" style="display: flex; align-items: center; justify-content: center; padding: 40px;">
                 <p style="color: var(--text-muted); font-size: 0.9rem;">Belum ada data pasangan.</p>
             </div>
             @endif
 
-            {{-- Keputusan akhir hanya tersedia setelah seluruh dokumen diverifikasi. --}}
-            @if(in_array($application->status, ['DIVERIFIKASI', 'DISETUJUI']))
-            <div class="glass-card workflow-status">
+            {{-- Tahap 3: Finalisasi --}}
+            @if(in_array($application->status, ['DIVERIFIKASI', 'SELESAI']))
+            <div class="glass-card interactive-card workflow-status">
                 <h3 class="detail-card-title">
-                    <i class="fa-solid fa-sliders"></i> Keputusan Akhir Pengajuan
+                    <i class="fa-solid fa-stamp"></i> Tahap 3: Finalisasi
                 </h3>
-                <div style="margin-bottom: 16px;">
-                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Status saat ini</label>
-                    <div class="form-control" style="display: flex; align-items: center; min-height: 42px; color: {{ $sc }}; font-weight: 700; background: rgba(0,0,0,0.1); border-color: rgba(255,255,255,0.05); margin-top: 6px;">{{ str_replace('_', ' ', $application->status) }}</div>
-                    <small style="display: block; margin-top: 8px; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4;">Status tahap awal dan hasil pemeriksaan dokumen mengikuti aksi verifikasi. Keputusan akhir tersedia setelah semua dokumen diterima.</small>
-                </div>
-                @php
-                    $adminDecision = match ($application->status) {
-                        'DIVERIFIKASI' => ['DISETUJUI' => 'Setujui & Buat Surat Izin Nikah'],
-                        'DISETUJUI' => ['SELESAI' => 'Tandai Selesai'],
-                        default => [],
-                    };
-                    $decisionButtonLabel = $application->status === 'DIVERIFIKASI'
-                        ? 'Setujui & Buat Surat Izin Nikah'
-                        : 'Tandai Pengajuan Selesai';
-                @endphp
-                <form action="{{ route('admin.admin.pengajuan_nikah.update_status', $application->id) }}" method="POST" data-confirm="Pengajuan akan disetujui dan Surat Izin Nikah final dibuat untuk anggota." data-confirm-title="Setujui dan buat surat?" data-confirm-button="Ya, setujui & buat surat" data-confirm-icon="question">
-                        @csrf
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px;">
-                            <div class="form-group">
-                                <label style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">Tindakan</label>
-                                <select name="status" class="form-control" required style="margin-top: 6px;">
-                                    <option value="">-- Pilih Keputusan --</option>
-                                    @foreach($adminDecision as $value => $label)
-                                        <option value="{{ $value }}">{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">Catatan (opsional)</label>
-                                <input type="text" name="catatan" class="form-control" style="margin-top: 6px;" value="{{ $application->catatan_admin }}" placeholder="Tambahkan catatan untuk anggota..." {{ $application->status === 'DIAJUKAN' ? 'required' : '' }}>
-                            </div>
+                
+                @if($application->status === 'SELESAI')
+                    @php
+                        $finalLetter = $application->letters->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')->first();
+                        $finalLetterAvailable = $finalLetter && \Illuminate\Support\Facades\Storage::disk('private')->exists($finalLetter->file_generated);
+                    @endphp
+                    <div style="margin-top: 16px; padding: 12px 16px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 8px; display: flex; flex-direction: column; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-check-circle" style="color: #34d399; font-size: 1.2rem;"></i>
+                            <span style="color: #cbd5e1; font-size: 0.85rem;">Pengajuan selesai. Surat Izin Nikah Final telah diterbitkan.</span>
                         </div>
-                        <button type="submit" class="btn-military" style="font-size: 0.85rem; padding: 10px 18px; width: 100%; justify-content: center;">
-                            <i class="fa-solid fa-check"></i> {{ $decisionButtonLabel }}
-                        </button>
-                </form>
+                        
+                        @if($finalLetterAvailable)
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                            <div>
+                                <div style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">Surat Izin Nikah Final</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Dibuat: {{ $finalLetter->generated_at?->format('d M Y H:i') }}</div>
+                            </div>
+                            <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $finalLetter->id]) }}" class="btn-military btn-interactive" style="font-size: 0.75rem; padding: 8px 12px;">
+                                <i class="fa-solid fa-download" style="margin-right: 6px;"></i> Download Surat
+                            </a>
+                        </div>
+                        @endif
+                    </div>
+                @else
+                    <div style="margin-bottom: 16px;">
+                        <p style="color: #cbd5e1; font-size: 0.85rem; line-height: 1.5; margin-bottom: 12px;">Seluruh dokumen persyaratan telah disetujui. Silakan finalisasi pengajuan ini untuk menerbitkan Surat Izin Nikah.</p>
+                    </div>
+                    <form action="{{ route('admin.admin.pengajuan_nikah.update_status', $application->id) }}" method="POST" data-confirm="Pengajuan akan disetujui dan Surat Izin Nikah final dibuat untuk anggota." data-confirm-title="Setujui dan buat surat?" data-confirm-button="Ya, setujui & buat surat" data-confirm-icon="question">
+                            @csrf
+                            <input type="hidden" name="status" value="SELESAI">
+                            <div class="form-group" style="margin-bottom: 16px;">
+                                <label style="font-size: 0.8rem; font-weight: 600; color: #cbd5e1;">Catatan (opsional)</label>
+                                <input type="text" name="catatan" class="form-control" style="margin-top: 6px;" value="{{ $application->catatan_admin }}" placeholder="Tambahkan catatan untuk anggota...">
+                            </div>
+                            <button type="submit" class="btn-military btn-interactive" style="font-size: 0.85rem; padding: 10px 18px; width: 100%; justify-content: center;">
+                                <i class="fa-solid fa-check"></i> Terbitkan Surat Izin Nikah Final
+                            </button>
+                    </form>
+                @endif
             </div>
             @endif
 
             {{-- Tahap 1: Surat Permohonan --}}
-            <div class="glass-card workflow-stage">
+            <div class="glass-card interactive-card workflow-stage">
                 <h3 class="detail-card-title">
                     <i class="fa-solid fa-file-contract"></i> Tahap 1: Surat Permohonan Izin Nikah
                 </h3>
@@ -272,23 +253,7 @@ $partner = $application->partner;
                     @php
                         $dtSuratPermohonan = $requiredAnggota->firstWhere('code', 'SURAT_PERMOHONAN_IZIN_NIKAH');
                         $docSuratPermohonan = $dtSuratPermohonan ? $application->documents->where('marriage_document_type_id', $dtSuratPermohonan->id)->first() : null;
-                        $generatedStage1Letter = $application->letters->firstWhere('jenis_surat', 'SURAT_PERMOHONAN_IZIN_NIKAH');
-                        $generatedStage1Available = $generatedStage1Letter && \Illuminate\Support\Facades\Storage::disk('private')->exists($generatedStage1Letter->file_generated);
                     @endphp
-                    <div style="padding: 14px; border-radius: 8px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.24);">
-                        <div style="font-size: 0.84rem; color: #bfdbfe; font-weight: 700; margin-bottom: 5px;">
-                            <i class="fa-solid fa-file-circle-plus"></i> Surat untuk dicetak — dibuat oleh sistem
-                        </div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;">Berkas awal yang diunduh anggota untuk dicetak dan ditandatangani.</div>
-                        @if($generatedStage1Available)
-                        <a href="{{ route('admin.admin.pengajuan_nikah.download_letter', [$application->id, $generatedStage1Letter->id]) }}" class="btn-military" style="font-size: 0.75rem; padding: 6px 12px;" title="Download surat yang dibuat sistem">
-                            <i class="fa-solid fa-download"></i> Download surat awal
-                        </a>
-                        @else
-                        <span style="font-size: 0.78rem; color: #fbbf24;">Berkas surat awal belum tersedia.</span>
-                        @endif
-                    </div>
-
                     <div style="font-size: 0.84rem; color: #cbd5e1; font-weight: 700; margin: 10px 0 2px;">
                         <i class="fa-solid fa-file-arrow-up"></i> Surat bertanda tangan — diunggah anggota untuk diperiksa
                     </div>
@@ -305,14 +270,9 @@ $partner = $application->partner;
                 </div>
 
                 @if($docSuratPermohonan && $docSuratPermohonan->status_verifikasi === 'DITERIMA')
-                <div style="margin-top: 20px; padding: 16px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 8px; text-align: center;">
-                    <div style="color: #34d399; font-weight: bold; margin-bottom: 12px;">
-                        <i class="fa-solid fa-check-circle"></i> Surat Permohonan Telah Disetujui
-                    </div>
-                    <p style="color: #cbd5e1; font-size: 0.82rem; margin: 0 0 12px;">Status pengajuan telah diperbarui otomatis. Lanjutkan pemeriksaan dokumen persyaratan Tahap 2.</p>
-                    <a href="{{ route('admin.admin.pengajuan_nikah.documents', $application->id) }}" class="btn-military" style="width: 100%; justify-content: center; text-align: center; font-size: 0.85rem; padding: 10px; background: #3b82f6; border-color: #2563eb;">
-                        Periksa Dokumen Tahap 2 <i class="fa-solid fa-arrow-right" style="margin-left: 5px;"></i>
-                    </a>
+                <div style="margin-top: 20px; padding: 12px 16px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-check-circle" style="color: #34d399; font-size: 1.2rem;"></i>
+                    <span style="color: #cbd5e1; font-size: 0.85rem;">Surat Permohonan telah disetujui.</span>
                 </div>
                 @elseif($docSuratPermohonan && $docSuratPermohonan->status_verifikasi === 'DITOLAK')
                 <div style="margin-top: 16px; padding: 12px 14px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.28); border-radius: 8px; color: #fcd34d; font-size: 0.82rem; line-height: 1.5;">
@@ -321,26 +281,56 @@ $partner = $application->partner;
                 @endif
             </div>
 
-            {{-- Riwayat Status --}}
-            <div class="glass-card history-card">
+            {{-- Tahap 2: Dokumen Persyaratan --}}
+            @if($docSuratPermohonan && $docSuratPermohonan->status_verifikasi === 'DITERIMA')
+            <div class="glass-card interactive-card workflow-stage-2">
                 <h3 class="detail-card-title">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Status
+                    <i class="fa-solid fa-folder-open"></i> Tahap 2: Dokumen Persyaratan
                 </h3>
-                <div style="display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 8px;">
-                    @forelse($application->statusHistories->sortByDesc('created_at') as $history)
-                    <div style="padding: 12px; border-radius: 8px; background: rgba(255,255,255,0.03); border-left: 3px solid {{ $statusColors[$history->status] ?? '#64748b' }};">
-                        <div style="font-weight: 700; color: #fff; font-size: 0.88rem;">{{ str_replace('_', ' ', $history->status) }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">{{ $history->created_at->format('d M Y, H:i') }} — {{ $history->changer->name ?? 'Sistem' }}</div>
-                        @if($history->catatan)
-                        <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 8px; background: rgba(0,0,0,0.2); padding: 8px 10px; border-radius: 6px;">{{ $history->catatan }}</div>
-                        @endif
+                <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 16px; line-height: 1.5;">
+                    Surat permohonan izin nikah telah disetujui. Lanjutkan ke pemeriksaan dokumen persyaratan untuk memvalidasi kelengkapan berkas anggota dan pasangan.
+                </p>
+                <a href="{{ route('admin.admin.pengajuan_nikah.documents', $application->id) }}" class="btn-military btn-interactive" style="width: 100%; justify-content: center; text-align: center; font-size: 0.85rem; padding: 12px; background: #3b82f6; border-color: #2563eb;">
+                    Periksa Dokumen Tahap 2 <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                </a>
+            </div>
+            @endif
+
+
+
+        </div>
+    </div>
+
+    {{-- Riwayat Status (Denah Alur) --}}
+    <div class="glass-card interactive-card history-card" style="margin-top: 24px; margin-bottom: 8px;">
+        <h3 class="detail-card-title">
+            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Status (Alur Proses)
+        </h3>
+        <div style="position: relative; padding-left: 24px; margin-top: 16px; max-height: 400px; overflow-y: auto; padding-right: 8px;">
+            <div style="position: absolute; top: 8px; bottom: 0; left: 6px; width: 2px; background: rgba(255, 255, 255, 0.1);"></div>
+            @forelse($application->statusHistories->sortByDesc('created_at') as $history)
+            <div style="position: relative; margin-bottom: 16px;">
+                <!-- Timeline Dot -->
+                <div style="position: absolute; left: -24px; top: 6px; width: 14px; height: 14px; border-radius: 50%; background: var(--bg-sidebar); border: 3px solid {{ $statusColors[$history->status] ?? '#64748b' }}; z-index: 2; box-shadow: 0 0 0 3px var(--bg-sidebar);"></div>
+                
+                <!-- Timeline Content -->
+                <div style="padding: 14px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='rgba(255,255,255,0.02)'">
+                    <div style="font-weight: 700; color: {{ $statusColors[$history->status] ?? '#fff' }}; font-size: 0.88rem; letter-spacing: 0.5px;">{{ str_replace('_', ' ', $history->status) }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> {{ $history->created_at->format('d M Y, H:i') }} 
+                        <span style="margin: 0 6px;">|</span> 
+                        <i class="fa-regular fa-user" style="margin-right: 4px;"></i> <span style="color: #cbd5e1;">{{ $history->changer->name ?? 'Sistem' }}</span>
                     </div>
-                    @empty
-                    <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px 0;">Belum ada riwayat.</p>
-                    @endforelse
+                    @if($history->catatan)
+                    <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 10px; background: rgba(0,0,0,0.25); padding: 10px 12px; border-radius: 6px; border-left: 2px solid {{ $statusColors[$history->status] ?? '#64748b' }}; line-height: 1.4;">
+                        {{ $history->catatan }}
+                    </div>
+                    @endif
                 </div>
             </div>
-
+            @empty
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px 0;">Belum ada riwayat.</p>
+            @endforelse
         </div>
     </div>
 

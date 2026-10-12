@@ -28,11 +28,13 @@ class LeaveRequest extends Model
         'approved_at',
         'approved_days',
         'approved_notes',
+        'approved_end_date',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'approved_end_date' => 'date',
         'working_days_count' => 'integer',
         'approved_days' => 'integer',
         'approved_at' => 'datetime',

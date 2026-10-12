@@ -39,10 +39,7 @@
                     <input type="text" class="form-control" value="{{ $personel->nrp_nip ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">Jenis Kelamin</label>
-                    <input type="text" class="form-control" value="{{ $personel->jenis_kelamin ?? '-' }}" disabled style="opacity: 0.6; cursor: not-allowed;">
-                </div>
+
 
                 <div class="form-group">
                     <label class="form-label">Pangkat / Golongan</label>
@@ -66,6 +63,31 @@
 
                 <div class="form-group" style="grid-column: span 2; margin-top: 10px; padding-top: 16px; border-top: 1px solid var(--border-color);">
                     <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">Data yang Dapat Diubah</h4>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin</label>
+                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" style="appearance: none; padding-right: 30px;">
+                        <option value="">-- Pilih --</option>
+                        <option value="Pria" {{ old('jenis_kelamin', $personel->jenis_kelamin ?? '') == 'Pria' ? 'selected' : '' }}>Pria</option>
+                        <option value="Wanita" {{ old('jenis_kelamin', $personel->jenis_kelamin ?? '') == 'Wanita' ? 'selected' : '' }}>Wanita</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="status_pernikahan">Status Pernikahan</label>
+                    <select id="status_pernikahan" name="status_pernikahan" class="form-control" style="appearance: none; padding-right: 30px;">
+                        <option value="">-- Pilih --</option>
+                        <option value="Belum Menikah" {{ old('status_pernikahan', $personel->status_pernikahan ?? '') == 'Belum Menikah' ? 'selected' : '' }}>Belum Menikah</option>
+                        <option value="Menikah" {{ old('status_pernikahan', $personel->status_pernikahan ?? '') == 'Menikah' ? 'selected' : '' }}>Menikah</option>
+                        <option value="Cerai Hidup" {{ old('status_pernikahan', $personel->status_pernikahan ?? '') == 'Cerai Hidup' ? 'selected' : '' }}>Cerai Hidup</option>
+                        <option value="Cerai Mati" {{ old('status_pernikahan', $personel->status_pernikahan ?? '') == 'Cerai Mati' ? 'selected' : '' }}>Cerai Mati</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label" for="tempat_lahir">Tempat Lahir</label>
+                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir', $personel->tempat_lahir ?? '') }}">
                 </div>
 
                 @if(!$isPejabat)
@@ -104,7 +126,7 @@
                 <div class="form-group">
                     <label class="form-label" for="password">Password Baru</label>
                     <div style="position: relative;">
-                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 6 karakter" style="padding-right: 40px;">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Minimal 6 karakter" style="padding-right: 40px;" autocapitalize="none">
                         <i class="fa-solid fa-eye" id="togglePasswordProf" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                     </div>
                 </div>
@@ -112,7 +134,7 @@
                 <div class="form-group">
                     <label class="form-label" for="password_confirmation">Konfirmasi Password Baru</label>
                     <div style="position: relative;">
-                        <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" style="padding-right: 40px;">
+                        <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" style="padding-right: 40px;" autocapitalize="none">
                         <i class="fa-solid fa-eye" id="togglePasswordConfProf" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);" onclick="const input = document.getElementById('password_confirmation'); input.type = input.type === 'password' ? 'text' : 'password'; this.classList.toggle('fa-eye-slash');"></i>
                     </div>
                 </div>

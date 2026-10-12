@@ -258,6 +258,15 @@
                 <label>Provinsi <span class="text-danger">*</span></label>
                 <input type="text" name="pasangan_provinsi" class="form-control" value="{{ old('pasangan_provinsi') }}" required>
             </div>
+            <div class="form-group" style="grid-column: 1 / -1; height: 0px; margin: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1);"></div>
+            <div class="form-group">
+                <label>Danramil Tujuan (Domisili Pasangan) <span class="text-danger">*</span></label>
+                <input type="text" name="danramil_tujuan" class="form-control" value="{{ old('danramil_tujuan') }}" placeholder="Contoh: Danramil 424-04 Talang Padang" required>
+            </div>
+            <div class="form-group">
+                <label>Dandim Tujuan (Domisili Pasangan) <span class="text-danger">*</span></label>
+                <input type="text" name="dandim_tujuan" class="form-control" value="{{ old('dandim_tujuan') }}" placeholder="Contoh: Dandim 0424 Tanggamus" required>
+            </div>
         </div>
     </div>
 

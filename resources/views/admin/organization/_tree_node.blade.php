@@ -168,21 +168,21 @@
 @elseif($isCardHeader)
 <tr style="background: rgba(255,255,255,0.02); border-top: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.05);">
     <td colspan="5" style="padding: 24px 30px;">
-        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div style="width: 48px; height: 48px; border-radius: 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); display: flex; align-items: center; justify-content: center; color: #60a5fa; font-size: 1.5rem;">
+        <div style="display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 25px;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 1.15rem;">
                     <i class="fa-solid {{ strtoupper($unit->name) === 'GUDANG' ? 'fa-box-open' : 'fa-building' }}"></i>
                 </div>
-                <div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; text-transform: uppercase;">
+                <div style="text-align: left;">
+                    <div style="font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: 0.05em; text-transform: uppercase;">
                         {{ $unit->name }}
                     </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
                         {{ strtoupper($unit->name) === 'GUDANG' ? 'Gudang' : 'Bagian Umum' }}
                     </div>
                 </div>
             </div>
-            <div>
+            <div style="position: absolute; right: 0;">
                 <code style="background: rgba(255,255,255,0.06); padding: 5px 10px; border-radius: 6px; color: #cbd5e1; font-size: 0.85rem;">
                     {{ $unit->code ?? '-' }}
                 </code>

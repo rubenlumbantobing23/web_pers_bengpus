@@ -158,12 +158,7 @@
                     });
                 </script>
 
-                <span class="badge badge-approved">
-                    <i class="fa-solid fa-user-shield"></i> {{ Auth::user()->personel->pangkat_golongan ?? 'ANGGOTA' }}
-                </span>
-                <span style="font-size: 0.85rem; color: var(--text-muted);">
-                    <i class="fa-regular fa-calendar-days"></i> {{ date('d M Y') }}
-                </span>
+
             </div>
         </header>
 

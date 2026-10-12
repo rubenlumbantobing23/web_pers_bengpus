@@ -11,6 +11,14 @@
             <h2 style="font-size: 1.4rem; color: #fff; font-weight: 700;">Pengajuan Nikah Anggota</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 4px;">Total: {{ $applications->count() }} pengajuan</p>
         </div>
+        
+        <form action="{{ route('admin.admin.pengajuan_nikah.index') }}" method="GET" style="display: flex; gap: 10px;">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / NRP..." class="form-input" style="width: 250px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px 16px; color: #fff;">
+            <button type="submit" class="btn-primary" style="padding: 10px 16px; border-radius: 8px;"><i class="fa-solid fa-search"></i></button>
+            @if(request('search'))
+                <a href="{{ route('admin.admin.pengajuan_nikah.index') }}" class="btn-secondary" style="padding: 10px 16px; border-radius: 8px;"><i class="fa-solid fa-xmark"></i></a>
+            @endif
+        </form>
     </div>
 
     {{-- Status Counters --}}

@@ -86,7 +86,7 @@
     </div>
 
     <div style="margin-top: 24px;">
-        {{ $logs->links('pagination::tailwind') }}
+        {{ $logs->links('vendor.pagination.custom') }}
     </div>
 </div>
 @endsection

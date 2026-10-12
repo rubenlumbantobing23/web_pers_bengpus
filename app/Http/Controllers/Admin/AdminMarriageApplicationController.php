@@ -11,15 +11,24 @@ use App\Models\MarriageDocument;
 use App\Models\MarriageStatusHistory;
 use App\Models\MarriageLetter;
 use App\Services\MarriageApplicationLetterService;
+use App\Notifications\MarriageStatusNotification;
 
 class AdminMarriageApplicationController extends Controller
 {
     // ─── index ───────────────────────────────────────────
-    public function index()
+    public function index(Request $request)
     {
-        $applications = MarriageApplication::with(['user', 'personel', 'partner'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = MarriageApplication::with(['user', 'personel', 'partner']);
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('personel', function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nrp_nip', 'like', "%{$search}%");
+            });
+        }
+
+        $applications = $query->orderBy('created_at', 'desc')->get();
 
         return view('admin.marriage_applications.index', compact('applications'));
     }
@@ -230,12 +239,8 @@ class AdminMarriageApplicationController extends Controller
         })->where('is_active', true)->get();
 
         $requiredTypes = $docTypes->filter(function ($type) use ($application) {
-            if ($type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH') {
-                return true;
-            }
-
-            if (!$type->is_required) {
-                return false;
+            if (in_array($type->code, ['SURAT_PERMOHONAN_IZIN_NIKAH', 'DOKUMEN_LAIN_CALON_PASANGAN'])) {
+                return $type->code === 'SURAT_PERMOHONAN_IZIN_NIKAH';
             }
 
             if (in_array($type->owner_type, ['ANGGOTA', 'ORANG_TUA_ANGGOTA'])) {
@@ -265,6 +270,16 @@ class AdminMarriageApplicationController extends Controller
             if ($reviewNote) {
                 $historyNote .= ' Catatan: ' . $reviewNote;
             }
+
+            // Notifikasi ke user bahwa dokumen ditolak
+            if ($reviewedDocument->status_verifikasi === 'DITOLAK') {
+                $application->user->notify(new MarriageStatusNotification(
+                    $application,
+                    'Dokumen Ditolak',
+                    $historyNote,
+                    'perlu_perbaikan'
+                ));
+            }
         } elseif (!$spnAccepted) {
             return;
         } else {
@@ -293,6 +308,16 @@ class AdminMarriageApplicationController extends Controller
             'catatan' => $historyNote,
             'changed_by' => Auth::id(),
         ]);
+
+        if ($application->user && in_array($nextStatus, [MarriageApplication::STATUS_PENGAJUAN_DISETUJUI, MarriageApplication::STATUS_DIVERIFIKASI])) {
+            $notifTitle = $nextStatus === MarriageApplication::STATUS_DIVERIFIKASI ? 'Dokumen Selesai Diverifikasi' : 'Tahap 1 Disetujui';
+            $application->user->notify(new \App\Notifications\MarriageStatusNotification(
+                $application,
+                $notifTitle,
+                $historyNote,
+                'info'
+            ));
+        }
     }
 
     // ─── updateStatus ────────────────────────────────────
@@ -314,10 +339,13 @@ class AdminMarriageApplicationController extends Controller
             if (empty($request->catatan)) {
                 return redirect()->back()->with('error', 'Alasan penolakan wajib diisi.');
             }
-        } elseif ($newStatus === MarriageApplication::STATUS_DISETUJUI) {
-            if ($application->status !== MarriageApplication::STATUS_DIVERIFIKASI) {
+        } elseif ($newStatus === MarriageApplication::STATUS_SELESAI || $newStatus === MarriageApplication::STATUS_DISETUJUI) {
+            if ($application->status !== MarriageApplication::STATUS_DIVERIFIKASI && $application->status !== MarriageApplication::STATUS_DISETUJUI) {
                 return redirect()->back()->with('error', 'Approval akhir hanya dapat diberikan setelah semua dokumen diterima dan status otomatis menjadi DIVERIFIKASI.');
             }
+
+            // Set the new status to SELESAI directly to skip the redundant DISETUJUI step
+            $newStatus = MarriageApplication::STATUS_SELESAI;
 
             // Prepare the final permit before approving so the member can download it immediately.
             $letterService->ensureGenerated($application, [MarriageApplicationLetterService::FINAL_CODE], Auth::id());
@@ -327,7 +355,7 @@ class AdminMarriageApplicationController extends Controller
                 ->first();
 
             if (!$finalLetter || !Storage::disk('private')->exists($finalLetter->file_generated)) {
-                return redirect()->back()->with('error', 'Pengajuan belum disetujui karena Surat Izin Nikah final belum berhasil dibuat. Periksa template surat final lalu coba lagi.');
+                return redirect()->back()->with('error', 'Pengajuan belum selesai karena Surat Izin Nikah final belum berhasil dibuat. Periksa template surat final lalu coba lagi.');
             }
 
             try {
@@ -337,36 +365,29 @@ class AdminMarriageApplicationController extends Controller
                         'catatan_admin' => $request->catatan,
                     ]);
 
-                    $application->personel()->update([
-                        'status_pernikahan' => 'Menikah'
-                    ]);
-
                     MarriageStatusHistory::create([
                         'marriage_application_id' => $application->id,
                         'status'     => $newStatus,
-                        'catatan'    => $request->catatan ?: 'Approval Akhir diberikan oleh Kabeng.',
+                        'catatan'    => $request->catatan ?: 'Pengajuan Selesai dan Surat Izin Nikah final telah terbit.',
                         'changed_by' => Auth::id(),
                     ]);
                 });
-                return redirect()->back()->with('success', 'Pengajuan disetujui dan Surat Izin Nikah final berhasil dibuat. Surat kini tersedia di halaman anggota.');
+                
+                // Notify User
+                if ($application->user) {
+                    $application->user->notify(new \App\Notifications\MarriageStatusNotification(
+                        $application,
+                        'Pengajuan Nikah Selesai',
+                        'Pengajuan nikah Anda telah disetujui dan selesai. Surat Izin Nikah final sudah dapat diunduh.',
+                        'success'
+                    ));
+                }
+
+                return redirect()->back()->with('success', 'Pengajuan selesai dan Surat Izin Nikah final berhasil dibuat. Surat kini tersedia di halaman anggota.');
             } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Gagal memproses Approval Akhir: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'Gagal memproses penyelesaian pengajuan: ' . $e->getMessage());
             }
 
-        } elseif ($newStatus === MarriageApplication::STATUS_SELESAI) {
-            if ($application->status !== MarriageApplication::STATUS_DISETUJUI) {
-                return redirect()->back()->with('error', 'Hanya pengajuan status DISETUJUI yang dapat diselesaikan.');
-            }
-
-            // Enforce SURAT_IZIN_NIKAH_FINAL is generated and physically exists
-            $finalLetter = \App\Models\MarriageLetter::where('marriage_application_id', $application->id)
-                ->where('jenis_surat', 'SURAT_IZIN_NIKAH_FINAL')
-                ->where('status', 'TERSEDIA')
-                ->first();
-
-            if (!$finalLetter || !\Illuminate\Support\Facades\Storage::disk('private')->exists($finalLetter->file_generated)) {
-                return redirect()->back()->with('error', 'Surat Izin Nikah final belum tersedia. Generate Surat Izin Nikah terlebih dahulu.');
-            }
         } else {
             return redirect()->back()->with('error', 'Status tidak dikenali.');
         }
@@ -384,6 +405,30 @@ class AdminMarriageApplicationController extends Controller
                 'catatan'    => $request->catatan,
                 'changed_by' => Auth::id(),
             ]);
+
+            // Notify User
+            if ($application->user) {
+                $notifTitle = 'Status Pengajuan Nikah Diperbarui';
+                $notifMessage = 'Pengajuan nikah Anda kini berstatus ' . str_replace('_', ' ', $newStatus) . '.';
+                $notifStatus = 'info';
+                
+                if ($newStatus === MarriageApplication::STATUS_DITOLAK) {
+                    $notifTitle = 'Pengajuan Nikah Ditolak';
+                    $notifMessage = 'Pengajuan nikah Anda ditolak. Alasan: ' . $request->catatan;
+                    $notifStatus = 'danger';
+                } elseif ($newStatus === MarriageApplication::STATUS_SELESAI) {
+                    $notifTitle = 'Pengajuan Nikah Selesai';
+                    $notifMessage = 'Proses pengajuan nikah Anda telah selesai sepenuhnya.';
+                    $notifStatus = 'success';
+                }
+
+                $application->user->notify(new \App\Notifications\MarriageStatusNotification(
+                    $application,
+                    $notifTitle,
+                    $notifMessage,
+                    $notifStatus
+                ));
+            }
         }
 
         return redirect()->back()->with('success', 'Status pengajuan berhasil diubah ke ' . str_replace('_', ' ', $newStatus) . '.');
@@ -504,7 +549,11 @@ class AdminMarriageApplicationController extends Controller
             abort(404, 'File surat tidak ditemukan di storage.');
         }
 
-        $downloadName = str_replace(['/', '\\', ' '], '_', $letter->jenis_surat) . '_' . $application->personel->nama . '.docx';
+        $personelName = str_replace(' ', '_', $application->personel->nama ?? 'Personel');
+        $cleanType = ucwords(strtolower(str_replace('_', ' ', $letter->jenis_surat)));
+        $cleanType = str_replace(' ', '_', $cleanType);
+        $downloadName = "{$cleanType}_{$personelName}.docx";
+        
         return Storage::disk('private')->download($letter->file_generated, $downloadName);
     }
 }

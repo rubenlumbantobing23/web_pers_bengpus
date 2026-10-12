@@ -58,21 +58,21 @@
                     <input type="text" id="nrp_nip" name="nrp_nip" class="form-control" value="{{ old('nrp_nip', $personel->nrp_nip) }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin</label>
+                    <label class="form-label" for="jenis_kelamin">Jenis Kelamin *</label>
                     @php
                         $jk = strtolower(trim($personel->jenis_kelamin ?? ''));
                         $isPria = in_array($jk, ['pria', 'laki-laki', 'l']);
                         $isWanita = in_array($jk, ['wanita', 'perempuan', 'p', 'w']);
                         $mappedJk = $isPria ? 'Pria' : ($isWanita ? 'Wanita' : $personel->jenis_kelamin);
                     @endphp
-                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control">
+                    <select id="jenis_kelamin" name="jenis_kelamin" class="form-control" required>
                         <option value="">-- Pilih --</option>
                         <option value="Pria" {{ old('jenis_kelamin', $mappedJk) === 'Pria' ? 'selected' : '' }}>Pria</option>
                         <option value="Wanita" {{ old('jenis_kelamin', $mappedJk) === 'Wanita' ? 'selected' : '' }}>Wanita</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="status_pernikahan">Status Pernikahan</label>
+                    <label class="form-label" for="status_pernikahan">Status Pernikahan *</label>
                     @php
                         $sn = strtolower(trim($personel->status_pernikahan ?? ''));
                         $mappedNikah = $personel->status_pernikahan;
@@ -81,7 +81,7 @@
                         elseif (in_array($sn, ['cerai hidup', 'ch'])) $mappedNikah = 'Cerai Hidup';
                         elseif (in_array($sn, ['cerai mati', 'cm'])) $mappedNikah = 'Cerai Mati';
                     @endphp
-                    <select id="status_pernikahan" name="status_pernikahan" class="form-control">
+                    <select id="status_pernikahan" name="status_pernikahan" class="form-control" required>
                         <option value="">-- Pilih --</option>
                         <option value="Belum Menikah" {{ old('status_pernikahan', $mappedNikah) == 'Belum Menikah' ? 'selected' : '' }}>Belum Menikah</option>
                         <option value="Menikah" {{ old('status_pernikahan', $mappedNikah) == 'Menikah' ? 'selected' : '' }}>Menikah</option>
@@ -90,20 +90,23 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="tgl_lahir">Tanggal Lahir</label>
+                    <label class="form-label" for="tgl_lahir">Tanggal Lahir *</label>
                     @php
                         $tglLahirVal = $personel->tgl_lahir ? (strtotime($personel->tgl_lahir) ? date('Y-m-d', strtotime($personel->tgl_lahir)) : $personel->tgl_lahir) : '';
                     @endphp
-                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir', $tglLahirVal) }}">
+                    <input type="date" id="tgl_lahir" name="tgl_lahir" class="form-control" value="{{ old('tgl_lahir', $tglLahirVal) }}" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="tempat_lahir">Tempat Lahir</label>
-                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir', $personel->tempat_lahir) }}">
+                    <label class="form-label" for="tempat_lahir">Tempat Lahir *</label>
+                    <input type="text" id="tempat_lahir" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir', $personel->tempat_lahir) }}" required>
                 </div>
-                <div class="form-group" style="grid-column:span 2;">
-                    <label class="form-label" for="agama_suku">Suku / Agama (pisah dengan baris baru)</label>
-                    <textarea id="agama_suku" name="agama_suku" class="form-control" rows="2"
-                        placeholder="Contoh baris 1: Jawa&#10;Baris 2: Islam">{{ old('agama_suku', $personel->agama_suku) }}</textarea>
+                <div class="form-group">
+                    <label class="form-label" for="agama">Agama *</label>
+                    <input type="text" id="agama" name="agama" class="form-control" value="{{ old('agama', $personel->agama) }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="suku">Suku *</label>
+                    <input type="text" id="suku" name="suku" class="form-control" value="{{ old('suku', $personel->suku) }}" required>
                 </div>
             </div>
         </div>

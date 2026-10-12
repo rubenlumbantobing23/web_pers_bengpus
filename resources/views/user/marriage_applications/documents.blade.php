@@ -12,7 +12,7 @@
     </div>
 
     <div class="glass-card">
-        <h3 style="font-size: 1.1rem; color: var(--accent-gold); font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
+        <h3 style="font-size: 1.1rem; color: #34d399; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px;">
             <i class="fa-solid fa-folder-open"></i> Dokumen Persyaratan Nikah (Tahap 2)
         </h3>
 

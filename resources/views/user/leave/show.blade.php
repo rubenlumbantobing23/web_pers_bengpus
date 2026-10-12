@@ -133,7 +133,7 @@
             </div>
 
             <div>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">Jumlah Hari Kerja</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Jumlah Hari Kerja Diajukan</span>
                 <div style="font-size: 1rem; font-weight: 700; color: #34d399;">{{ $leaveRequest->working_days_count }} Hari Kerja</div>
             </div>
 
@@ -143,9 +143,26 @@
             </div>
 
             <div>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">Tanggal Selesai Cuti</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Tanggal Selesai Cuti Diajukan</span>
                 <div style="font-size: 1rem; font-weight: 600; color: #fff;">{{ $leaveRequest->end_date->format('d F Y') }}</div>
             </div>
+
+            @if($leaveRequest->status === 'approved')
+            <div style="grid-column: span 2; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1); display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--accent-gold);">Jumlah Hari Kerja Disetujui</span>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-gold);">{{ $leaveRequest->approved_days ?? $leaveRequest->working_days_count }} Hari Kerja</div>
+                </div>
+                <div>
+                    <span style="font-size: 0.8rem; color: var(--accent-gold);">Tanggal Selesai Disetujui</span>
+                    @if(is_null($leaveRequest->approved_end_date) && !is_null($leaveRequest->approved_days) && $leaveRequest->approved_days < $leaveRequest->working_days_count)
+                        <div style="font-size: 0.9rem; font-weight: 500; color: #fca5a5; margin-top: 4px;">Periode persetujuan belum tercatat; perlu ditinjau admin</div>
+                    @else
+                        <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-gold);">{{ \Carbon\Carbon::parse($leaveRequest->approved_end_date ?? $leaveRequest->end_date)->format('d F Y') }}</div>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             <div style="grid-column: span 2;">
                 <span style="font-size: 0.8rem; color: var(--text-muted);">Alasan / Keperluan Cuti</span>

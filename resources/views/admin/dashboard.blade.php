@@ -39,12 +39,6 @@
             <div style="font-size: 2.2rem; font-weight: 800; color: #fde047; margin-top: 6px;">{{ $totalPending }}</div>
         </div>
 
-        <!-- Card 4: Aktivitas -->
-        <div class="glass-card" style="padding: 20px; position: relative; overflow: hidden; border-color: rgba(16, 185, 129, 0.4);">
-            <div style="position: absolute; top: -10px; right: -10px; font-size: 5rem; color: rgba(16, 185, 129, 0.05);"><i class="fa-solid fa-bolt"></i></div>
-            <div style="font-size: 0.8rem; font-weight: 700; color: #34d399; text-transform: uppercase;">Aktivitas Baru (7 Hari)</div>
-            <div style="font-size: 2.2rem; font-weight: 800; color: #6ee7b7; margin-top: 6px;">{{ $recentActivityCount }}</div>
-        </div>
     </div>
 
     <!-- Monitoring Layanan -->
@@ -113,69 +107,98 @@
         </div>
     </div>
 
-    <!-- Bottom Grid -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+    <!-- Charts Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
         
-        <!-- Aktivitas Terbaru -->
-        <div class="glass-card">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                <h3 style="font-size: 1.1rem; color: #fff; display: flex; align-items: center; gap: 10px; margin: 0;">
-                    <i class="fa-solid fa-list-timeline" style="color: #60a5fa;"></i> Aktivitas Terbaru
-                </h3>
-                <a href="{{ route('admin.activity_logs.index') }}" style="font-size: 0.85rem; color: #60a5fa; font-weight: 600;">Lihat Semua &rarr;</a>
+        <div class="glass-card" style="padding: 20px;">
+            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-chart-pie" style="color: #60a5fa;"></i> Komposisi Personel
+            </h3>
+            <div style="height: 250px; position: relative; width: 100%;">
+                <canvas id="personelChart"></canvas>
             </div>
-
-            @if($recentActivities->isEmpty())
-                <div style="text-align: center; padding: 20px; color: var(--text-muted);">Belum ada aktivitas tercatat.</div>
-            @else
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    @foreach($recentActivities as $log)
-                        <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border-left: 2px solid #60a5fa;">
-                            <div style="flex-shrink: 0; margin-top: 4px; color: #60a5fa;">
-                                <i class="fa-solid fa-circle-dot" style="font-size: 0.8rem;"></i>
-                            </div>
-                            <div style="flex-grow: 1;">
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
-                                    <strong style="color: #fff; font-size: 0.9rem;">{{ $log->user->name ?? 'Sistem' }}</strong>
-                                    <span style="font-size: 0.75rem; color: var(--text-muted);">{{ \Carbon\Carbon::parse($log->created_at)->diffForHumans() }}</span>
-                                </div>
-                                <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 2px;">{{ $log->action }}</div>
-                                @if($log->description)
-                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; font-style: italic;">"{{ $log->description }}"</div>
-                                @endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
         </div>
 
-        <!-- Akses Cepat -->
-        <div class="glass-card">
+        <div class="glass-card" style="padding: 20px;">
             <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                <i class="fa-solid fa-rocket" style="color: #a78bfa;"></i> Akses Cepat
+                <i class="fa-solid fa-chart-bar" style="color: #34d399;"></i> Statistik Layanan
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <a href="{{ route('admin.personel.create') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between; text-align: left;">
-                    <span><i class="fa-solid fa-user-plus" style="color: var(--primary); margin-right: 8px; width: 20px;"></i> Tambah Personel</span>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                </a>
-                <a href="{{ route('admin.letters.index') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between; text-align: left;">
-                    <span><i class="fa-solid fa-envelope-open-text" style="color: var(--accent-gold); margin-right: 8px; width: 20px;"></i> Arsip Surat Intern</span>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                </a>
-                <a href="{{ route('admin.templates.index') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between; text-align: left;">
-                    <span><i class="fa-solid fa-file-word" style="color: #60a5fa; margin-right: 8px; width: 20px;"></i> Kelola Template</span>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                </a>
-                <a href="{{ route('admin.organization.index') }}" class="btn-secondary" style="display: flex; align-items: center; justify-content: space-between; text-align: left;">
-                    <span><i class="fa-solid fa-sitemap" style="color: #a78bfa; margin-right: 8px; width: 20px;"></i> Struktur & Pejabat</span>
-                    <i class="fa-solid fa-chevron-right" style="font-size: 0.8rem; color: var(--text-muted);"></i>
-                </a>
+            <div style="height: 250px; position: relative; width: 100%;">
+                <canvas id="layananChart"></canvas>
             </div>
         </div>
 
     </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        Chart.defaults.color = 'rgba(255, 255, 255, 0.7)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        // Chart Personel (Doughnut)
+        const ctxPersonel = document.getElementById('personelChart').getContext('2d');
+        new Chart(ctxPersonel, {
+            type: 'doughnut',
+            data: {
+                labels: ['Militer', 'PNS'],
+                datasets: [{
+                    data: [{{ $personelStats['militer'] }}, {{ $personelStats['pns'] }}],
+                    backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(16, 185, 129, 0.8)'],
+                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(16, 185, 129, 1)'],
+                    borderWidth: 1,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Chart Layanan (Bar)
+        const ctxLayanan = document.getElementById('layananChart').getContext('2d');
+        new Chart(ctxLayanan, {
+            type: 'bar',
+            data: {
+                labels: ['Cuti', 'Nikah'],
+                datasets: [
+                    {
+                        label: 'Disetujui',
+                        data: [{{ $leaveStats['approved'] }}, {{ $marriageStats['approved'] }}],
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    },
+                    {
+                        label: 'Menunggu',
+                        data: [{{ $leaveStats['pending'] }}, {{ $marriageStats['pending'] }}],
+                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                    },
+                    {
+                        label: 'Ditolak',
+                        data: [{{ $leaveStats['rejected'] }}, {{ $marriageStats['rejected'] }}],
+                        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                },
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    });
+</script>
 
 </div>
 @endsection

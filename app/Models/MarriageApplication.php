@@ -22,6 +22,7 @@ class MarriageApplication extends Model
         'status', 'catatan_admin',
         'alamat_domisili', 'kelurahan_domisili', 'kecamatan_domisili',
         'kabupaten_domisili', 'provinsi_domisili', 'kua_tujuan',
+        'danramil_tujuan', 'dandim_tujuan',
         'bapak_anggota_nama', 'bapak_anggota_agama', 'bapak_anggota_pekerjaan', 'bapak_anggota_alamat',
         'ibu_anggota_nama', 'ibu_anggota_agama', 'ibu_anggota_pekerjaan', 'ibu_anggota_alamat'
     ];

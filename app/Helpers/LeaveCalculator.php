@@ -41,6 +41,42 @@ class LeaveCalculator
     }
 
     /**
+     * Calculate effective end date given a start date and the number of working days approved.
+     * Skips Saturdays, Sundays, and national holidays.
+     */
+    public static function calculateEndDate(string $startDateStr, int $workingDaysCount): string
+    {
+        $date = new DateTime($startDateStr);
+
+        $holidays = Holiday::pluck('date')->map(function ($d) {
+            return is_string($d) ? substr($d, 0, 10) : $d->format('Y-m-d');
+        })->toArray();
+
+        $daysCounted = 0;
+
+        if ($workingDaysCount < 1) {
+            $workingDaysCount = 1;
+        }
+
+        while (true) {
+            $dayOfWeek = (int) $date->format('N');
+            $dateStr = $date->format('Y-m-d');
+
+            if ($dayOfWeek < 6 && !in_array($dateStr, $holidays)) {
+                $daysCounted++;
+            }
+
+            if ($daysCounted === $workingDaysCount) {
+                break;
+            }
+
+            $date->modify('+1 day');
+        }
+
+        return $date->format('Y-m-d');
+    }
+
+    /**
      * Get user entitlement stats for current year.
      * Returns: [
      *   'total' => 12,
@@ -64,7 +100,7 @@ class LeaveCalculator
             $activeCrossYearLeave = LeaveRequest::where('user_id', $userId)
                 ->whereIn('status', ['pending', 'approved'])
                 ->whereYear('start_date', $year - 1)
-                ->whereDate('end_date', '>=', $currentDate)
+                ->whereDate(\Illuminate\Support\Facades\DB::raw('COALESCE(approved_end_date, end_date)'), '>=', $currentDate)
                 ->exists();
 
             if ($activeCrossYearLeave) {

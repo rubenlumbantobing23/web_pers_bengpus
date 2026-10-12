@@ -64,7 +64,7 @@ class MarriageApplicationController extends Controller
         }
 
         $activeApplication = MarriageApplication::where('user_id', $user->id)
-            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'SELESAI'])
+            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'DISETUJUI', 'SELESAI'])
             ->first();
 
         if ($activeApplication) {
@@ -101,7 +101,7 @@ class MarriageApplicationController extends Controller
         }
 
         $activeApplication = MarriageApplication::where('user_id', $user->id)
-            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'SELESAI'])
+            ->whereNotIn('status', ['DITOLAK', 'DIBATALKAN', 'DISETUJUI', 'SELESAI'])
             ->first();
 
         if ($activeApplication) {
@@ -133,6 +133,8 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'   => $request->kabupaten_domisili ?: '-',
             'provinsi_domisili'    => $request->provinsi_domisili ?: '-',
             'kua_tujuan'           => $request->kua_tujuan ?: '-',
+            'danramil_tujuan'      => $request->danramil_tujuan ?: '-',
+            'dandim_tujuan'        => $request->dandim_tujuan ?: '-',
             'bapak_anggota_nama'      => $request->bapak_anggota_nama ?: '-',
             'bapak_anggota_agama'     => $request->bapak_anggota_agama ?: '-',
             'bapak_anggota_pekerjaan' => $request->bapak_anggota_pekerjaan ?: '-',
@@ -250,6 +252,8 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'        => 'required|string|max:100',
             'provinsi_domisili'         => 'required|string|max:100',
             'kua_tujuan'                => 'required|string|max:100',
+            'danramil_tujuan'           => 'required|string|max:255',
+            'dandim_tujuan'             => 'required|string|max:255',
             // Orang Tua Anggota
             'bapak_anggota_nama'      => 'required|string|max:255',
             'bapak_anggota_agama'     => 'required|string|max:100',
@@ -289,6 +293,8 @@ class MarriageApplicationController extends Controller
             'kabupaten_domisili'    => $validated['kabupaten_domisili'],
             'provinsi_domisili'     => $validated['provinsi_domisili'],
             'kua_tujuan'            => $validated['kua_tujuan'],
+            'danramil_tujuan'       => $validated['danramil_tujuan'],
+            'dandim_tujuan'         => $validated['dandim_tujuan'],
             'bapak_anggota_nama'      => $validated['bapak_anggota_nama'],
             'bapak_anggota_agama'     => $validated['bapak_anggota_agama'],
             'bapak_anggota_pekerjaan' => $validated['bapak_anggota_pekerjaan'],
@@ -423,6 +429,8 @@ class MarriageApplicationController extends Controller
             'bapak_anggota_agama'     => $validated['bapak_anggota_agama'],
             'bapak_anggota_pekerjaan' => $validated['bapak_anggota_pekerjaan'],
             'bapak_anggota_alamat'    => $validated['bapak_anggota_alamat'],
+            'danramil_tujuan'       => $validated['danramil_tujuan'] ?? '-',
+            'dandim_tujuan'         => $validated['dandim_tujuan'] ?? '-',
             'ibu_anggota_nama'        => $validated['ibu_anggota_nama'],
             'ibu_anggota_agama'       => $validated['ibu_anggota_agama'],
             'ibu_anggota_pekerjaan'   => $validated['ibu_anggota_pekerjaan'],
@@ -519,6 +527,16 @@ class MarriageApplicationController extends Controller
             'catatan'    => 'Pengajuan disubmit ke Admin untuk diverifikasi.',
             'changed_by' => Auth::id(),
         ]);
+
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        $notification = new \App\Notifications\NewApplicationNotification(
+            'Nikah',
+            Auth::user()->name,
+            route('admin.admin.pengajuan_nikah.show', $application->id)
+        );
+        foreach ($admins as $admin) {
+            $admin->notify($notification);
+        }
 
         return redirect()->route('user.pengajuan_nikah.show', $application->id)
             ->with('success', 'Pengajuan berhasil disubmit. Admin akan segera memverifikasi dokumen Anda.');
@@ -819,7 +837,11 @@ class MarriageApplicationController extends Controller
             abort(404, 'File surat tidak ditemukan.');
         }
 
-        $fileName = basename($letter->file_generated);
+        $personelName = str_replace(' ', '_', $application->personel->nama ?? 'Personel');
+        $cleanType = ucwords(strtolower(str_replace('_', ' ', $letter->jenis_surat)));
+        $cleanType = str_replace(' ', '_', $cleanType);
+        $fileName = "{$cleanType}_{$personelName}.docx";
+
         return Storage::disk('private')->download($letter->file_generated, $fileName);
     }
 }

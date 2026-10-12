@@ -74,7 +74,8 @@
                             <div style="background:#ecfdf5; border-left:4px solid #10b981; padding:16px 20px; margin-bottom:30px; border-radius:4px;">
                                 <div style="font-size:13px; color:#065f46; font-weight:700; margin-bottom:4px; text-transform:uppercase;">Status: Disetujui</div>
                                 <div style="font-size:14px; color:#047857; line-height:1.5;">
-                                    Jumlah hari yang disetujui: <strong>{{ $leaveRequest->approved_days ?? $leaveRequest->working_days_count }} hari</strong>
+                                    Jumlah hari yang disetujui: <strong>{{ $leaveRequest->approved_days ?? $leaveRequest->working_days_count }} hari</strong><br>
+                                    Periode disetujui: <strong>{{ \Carbon\Carbon::parse($leaveRequest->start_date)->format('d M Y') }} s/d {{ \Carbon\Carbon::parse($leaveRequest->approved_end_date ?? $leaveRequest->end_date)->format('d M Y') }}</strong>
                                 </div>
                             </div>
                         @elseif ($status === 'rejected' || $status === 'ditolak')

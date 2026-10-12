@@ -44,7 +44,7 @@ class DashboardController extends Controller
         // Get approved/pending leave dates for calendar rendering
         $myLeaveDates = LeaveRequest::where('user_id', $user->id)
             ->whereIn('status', ['pending', 'approved'])
-            ->get(['start_date', 'end_date', 'status', 'working_days_count']);
+            ->get(['start_date', 'end_date', 'approved_end_date', 'status', 'working_days_count']);
 
         // Calculate General Statistics
         $totalLeave = LeaveRequest::where('user_id', $user->id)->count();

@@ -41,20 +41,36 @@ class AdminDashboardController extends Controller
             'rejected' => MarriageApplication::where('status', 'DITOLAK')->count(),
         ];
 
-        // 3. AKTIVITAS TERBARU (General Activity)
-        $recentActivities = ActivityLog::with('user')
-            ->orderBy('created_at', 'desc')
-            ->take(6)
-            ->get();
+        $personelStats = [
+            'militer' => Personel::where('jenis_personel', 'MILITER')->where('status_aktif', true)->count(),
+            'pns' => Personel::where('jenis_personel', 'PNS')->where('status_aktif', true)->count(),
+        ];
 
         return view('admin.dashboard', compact(
             'totalPersonel',
             'totalPengajuan',
             'totalPending',
-            'recentActivityCount',
             'leaveStats',
             'marriageStats',
-            'recentActivities'
+            'personelStats'
         ));
+    }
+
+    public function readNotification($id)
+    {
+        $notification = \Illuminate\Support\Facades\Auth::user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        $url = $notification->data['url'] ?? route('admin.dashboard');
+        if (str_starts_with($url, 'http://localhost/')) {
+            $url = str_replace('http://localhost/', '/', $url);
+        }
+        
+        return redirect($url);
+    }
+
+    public function readAllNotifications()
+    {
+        \Illuminate\Support\Facades\Auth::user()->unreadNotifications->markAsRead();
+        return back()->with('success', 'Semua notifikasi telah ditandai sebagai sudah dibaca.');
     }
 }

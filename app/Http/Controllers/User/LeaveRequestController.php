@@ -49,11 +49,12 @@ class LeaveRequestController extends Controller
         // Get existing leave requests of user to highlight on calendar
         $existingLeaves = LeaveRequest::where('user_id', Auth::id())
             ->whereIn('status', ['pending', 'approved'])
-            ->get(['start_date', 'end_date', 'status'])
+            ->get(['start_date', 'end_date', 'approved_end_date', 'status'])
             ->map(function ($l) {
+                $effectiveEnd = ($l->status === 'approved' && $l->approved_end_date) ? $l->approved_end_date : $l->end_date;
                 return [
                     'start' => is_string($l->start_date) ? substr($l->start_date, 0, 10) : $l->start_date->format('Y-m-d'),
-                    'end' => is_string($l->end_date) ? substr($l->end_date, 0, 10) : $l->end_date->format('Y-m-d'),
+                    'end' => is_string($effectiveEnd) ? substr($effectiveEnd, 0, 10) : $effectiveEnd->format('Y-m-d'),
                     'status' => $l->status,
                 ];
             });
@@ -196,123 +197,7 @@ class LeaveRequestController extends Controller
         }
     }
 
-    public function downloadIzinTemplate(Request $request)
-    {
-        $user = Auth::user();
-        $personel = $user->personel;
 
-        $nama = $personel ? $personel->nama : $user->name;
-        $pangkat = $personel ? $personel->pangkat_golongan : '-';
-        $nrp = $personel ? $personel->nrp_nip : '-';
-        $jabatan = $personel ? str_replace(["\r", "\n"], ' ', $personel->jabatan) : '-';
-        $satuan = $personel ? $personel->satuan_bagian : 'Bengpuskomlekad';
-
-        $leaveTypeName = 'Cuti Tahunan';
-        if ($request->filled('leave_type_id')) {
-            $lt = LeaveType::find($request->leave_type_id);
-            if ($lt) {
-                $leaveTypeName = $lt->name;
-            }
-        }
-
-        $startDateRaw = $request->input('start_date');
-        $endDateRaw = $request->input('end_date');
-        
-        $startDate = $startDateRaw ? \Carbon\Carbon::parse($startDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
-        $endDate = $endDateRaw ? \Carbon\Carbon::parse($endDateRaw)->locale('id')->isoFormat('D MMMM Y') : '..............';
-        $reason = urldecode($request->input('reason', '..........................................................'));
-
-        $structureService = app(\App\Services\OrganizationStructureService::class);
-        $kabeng = $structureService->getSignerPersonel('kabeng');
-        $kabengNama = $kabeng ? $kabeng->nama : '....................................................';
-        $kabengPangkat = $kabeng ? $kabeng->pangkat_golongan : 'Kolonel';
-        $kabengCorps = $kabeng ? ($structureService->resolveCorpsForPersonel($kabeng) ?: 'Cke') : 'Cke';
-        $kabengNrp = $kabeng ? $kabeng->nrp_nip : '............................';
-
-        $html = '
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="utf-8">
-            <title>Surat Izin Cuti - Kepala Bengpuskomlekad</title>
-            <style>
-                body { font-family: "Times New Roman", Times, serif; font-size: 12pt; line-height: 1.5; margin: 30px; }
-                .header-kop { text-align: center; font-weight: bold; font-size: 12pt; text-transform: uppercase; margin-bottom: 5px; }
-                .line { border-bottom: 3px double #000; margin-bottom: 20px; }
-                .title { text-align: center; font-weight: bold; font-size: 14pt; text-decoration: underline; margin-bottom: 5px; }
-                .sub-title { text-align: center; font-size: 11pt; margin-bottom: 25px; }
-                .table-data { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
-                .table-data td { padding: 5px 8px; vertical-align: top; }
-                .ttd-table { width: 100%; margin-top: 40px; }
-                .ttd-table td { text-align: center; vertical-align: top; }
-            </style>
-        </head>
-        <body>
-            <div class="header-kop">
-                BENGPUSKOMLEKAD<br>
-                STAF PERSONALIA
-            </div>
-            <div class="line"></div>
-
-            <div class="title">SURAT IZIN CUTI</div>
-            <div class="sub-title">Nomor: SIC / &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / ' . date('m') . ' / ' . date('Y') . '</div>
-
-            <p>Diberikan izin kepada:</p>
-
-            <table class="table-data">
-                <tr>
-                    <td width="30%">Nama Lengkap</td>
-                    <td width="3%">:</td>
-                    <td><strong>' . htmlspecialchars($nama) . '</strong></td>
-                </tr>
-                <tr>
-                    <td>Pangkat / Golongan</td>
-                    <td>:</td>
-                    <td>' . htmlspecialchars($pangkat) . '</td>
-                </tr>
-                <tr>
-                    <td>NRP / NIP</td>
-                    <td>:</td>
-                    <td>' . htmlspecialchars($nrp) . '</td>
-                </tr>
-                <tr>
-                    <td>Jabatan</td>
-                    <td>:</td>
-                    <td>' . htmlspecialchars($jabatan) . '</td>
-                </tr>
-                <tr>
-                    <td>Satuan / Bagian</td>
-                    <td>:</td>
-                    <td>' . htmlspecialchars($satuan) . '</td>
-                </tr>
-            </table>
-
-            <p>Untuk melaksanakan <strong>' . htmlspecialchars($leaveTypeName) . '</strong> terhitung mulai tanggal <strong>' . htmlspecialchars($startDate) . '</strong> sampai dengan <strong>' . htmlspecialchars($endDate) . '</strong> dengan keperluan: <i>' . htmlspecialchars($reason) . '</i>.</p>
-
-            <p>Demikian Surat Izin Cuti ini dikeluarkan untuk dipergunakan sebagaimana mestinya.</p>
-
-            <table class="ttd-table">
-                <tr>
-                    <td style="width: 50%;"></td>
-                    <td style="width: 50%;">
-                        Dikeluarkan di: Jakarta<br>
-                        Pada tanggal: ' . date('d F Y') . '<br><br>
-                        <strong>Kepala Bengpuskomlekad</strong>
-                        <br><br><br><br><br>
-                        ( ' . htmlspecialchars($kabengNama) . ' )<br>
-                        ' . htmlspecialchars($kabengPangkat) . ' ' . htmlspecialchars($kabengCorps) . ' NRP ' . htmlspecialchars($kabengNrp) . '
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>';
-
-        $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $nama);
-        $fileName = 'Surat_Izin_Cuti_Kabengpus_' . ($cleanName ?: 'Anggota') . '.doc';
-
-        return response($html)
-            ->header('Content-Type', 'application/msword')
-            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"');
-    }
 
     public function calculateDays(Request $request)
     {
@@ -335,6 +220,12 @@ class LeaveRequestController extends Controller
         ]);
 
         $leaveType = LeaveType::findOrFail($request->leave_type_id);
+
+        if (!$leaveType->is_active) {
+            return back()->withInput()->withErrors([
+                'leave_type_id' => 'Jenis cuti yang Anda pilih saat ini sedang tidak aktif.',
+            ]);
+        }
 
         $rules = [
             'leave_type_id' => 'required|exists:leave_types,id',
@@ -376,110 +267,161 @@ class LeaveRequestController extends Controller
             ]);
         }
 
-        $entitlement = LeaveCalculator::getUserEntitlementSummary($user->id);
 
-        // Validasi jatah cuti khusus Cuti Tahunan, Cuti Kawin, dan jenis cuti lainnya
-        if ($leaveType->code === 'CT_TAHUNAN') {
-            if ($workingDays > $entitlement['available_after_pending']) {
+
+        $uploadedFiles = [];
+        try {
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $leaveType, $workingDays, &$uploadedFiles) {
+                // Lock the user row to serialize all leave request creations for this user.
+                // This prevents race conditions even when no overlapping rows exist yet.
+                \App\Models\User::where('id', $user->id)->lockForUpdate()->first();
+
+                // Validasi ulang is_active dari record terbaru di dalam lock
+                $lockedLeaveType = \App\Models\LeaveType::where('id', $leaveType->id)->lockForUpdate()->first();
+                if (!$lockedLeaveType || !$lockedLeaveType->is_active) {
+                    throw new \Exception("INACTIVE");
+                }
+
+                $entitlement = LeaveCalculator::getUserEntitlementSummary($user->id);
+
+                // Validasi jatah cuti khusus Cuti Tahunan, Cuti Kawin, dan jenis cuti lainnya
+                if ($lockedLeaveType->code === 'CT_TAHUNAN') {
+                    if ($workingDays > $entitlement['available_after_pending']) {
+                        throw new \Exception("QUOTA_EXCEEDED:{$entitlement['available_after_pending']}");
+                    }
+                } elseif ($lockedLeaveType->code === 'CT_KAWIN') {
+                    $personel = $user->personel;
+                    $gender = $personel ? $personel->jenis_kelamin : null;
+
+                    if (empty($gender)) {
+                        throw new \Exception("GENDER_REQUIRED");
+                    }
+
+                    $genderLower = strtolower($gender);
+                    $isFemale = str_contains($genderLower, 'wanita') || str_contains($genderLower, 'perempuan') || $genderLower === 'p' || $genderLower === 'w';
+                    $maxDays = $isFemale ? 6 : 3;
+                    $genderLabel = $isFemale ? 'Wanita' : 'Pria';
+
+                    if ($workingDays > $maxDays) {
+                        throw new \Exception("KAWIN_EXCEEDED:{$maxDays}:{$genderLabel}");
+                    }
+                } elseif ($lockedLeaveType->default_days > 0 && $workingDays > $lockedLeaveType->default_days) {
+                    throw new \Exception("DEFAULT_EXCEEDED:{$lockedLeaveType->default_days}");
+                }
+
+                // Check overlapping leave requests
+                $overlap = LeaveRequest::where('user_id', $user->id)
+                    ->whereIn('status', ['pending', 'approved'])
+                    ->where(function ($query) use ($request) {
+                        $query->whereBetween('start_date', [$request->start_date, $request->end_date])
+                            ->orWhereBetween(\Illuminate\Support\Facades\DB::raw('COALESCE(approved_end_date, end_date)'), [$request->start_date, $request->end_date])
+                            ->orWhere(function ($q) use ($request) {
+                                $q->where('start_date', '<=', $request->start_date)
+                                    ->where(\Illuminate\Support\Facades\DB::raw('COALESCE(approved_end_date, end_date)'), '>=', $request->end_date);
+                            });
+                    })->exists();
+
+                if ($overlap) {
+                    throw new \Exception("OVERLAP");
+                }
+
+                $requestNumber = 'CUTI/' . date('Ymd') . '/' . strtoupper(substr(uniqid(), -5));
+
+                $leaveRequest = LeaveRequest::create([
+                    'user_id' => $user->id,
+                    'leave_type_id' => $lockedLeaveType->id,
+                    'request_number' => $requestNumber,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                    'working_days_count' => $workingDays,
+                    'reason' => $request->reason,
+                    'tujuan' => $request->tujuan,
+                    'pengikut' => $request->pengikut,
+                    'kendaraan' => $request->kendaraan,
+                    'kodim_koramil' => $request->kodim_koramil,
+                    'emergency_contact' => $request->emergency_contact,
+                    'status' => 'pending',
+                ]);
+
+                    // Save Surat Permohonan
+                    if ($request->hasFile('permohonan_document')) {
+                        $file = $request->file('permohonan_document');
+                        $filename = \Illuminate\Support\Str::uuid() . '.' . $file->extension();
+                        $path = $file->storeAs('leave_documents', $filename, 'local');
+                        if (!$path) {
+                            throw new \Exception("UPLOAD_FAILED");
+                        }
+                        $uploadedFiles[] = $path;
+                        LeaveRequestDocument::create([
+                            'leave_request_id' => $leaveRequest->id,
+                            'document_name' => '[Surat Permohonan] ' . $file->getClientOriginalName(),
+                            'file_path' => $path,
+                            'file_size' => $file->getSize(),
+                        ]);
+                    }
+
+                    // Save Supporting Documents
+                    if ($request->hasFile('supporting_documents')) {
+                        foreach ($request->file('supporting_documents') as $file) {
+                            $filename = \Illuminate\Support\Str::uuid() . '.' . $file->extension();
+                            $path = $file->storeAs('leave_documents', $filename, 'local');
+                            if (!$path) {
+                                throw new \Exception("UPLOAD_FAILED");
+                            }
+                            $uploadedFiles[] = $path;
+                            LeaveRequestDocument::create([
+                                'leave_request_id' => $leaveRequest->id,
+                                'document_name' => '[Lampiran Pendukung] ' . $file->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_size' => $file->getSize(),
+                            ]);
+                        }
+                    }
+
+                    \App\Helpers\ActivityLogger::log('Pengajuan Cuti', "Mengajukan cuti baru ({$lockedLeaveType->name}) mulai " . \Carbon\Carbon::parse($request->start_date)->format('d M Y'));
+
+                    $admins = \App\Models\User::where('role', 'admin')->get();
+                    $notification = new \App\Notifications\NewApplicationNotification(
+                        'Cuti',
+                        $user->name,
+                        route('admin.leave.show', $leaveRequest->id)
+                    );
+                    foreach ($admins as $admin) {
+                        $admin->notify($notification);
+                    }
+
+                return redirect()->route('user.leave.show', $leaveRequest->id)
+                    ->with('success', 'Pengajuan cuti berhasil dikirim! Menunggu verifikasi dari Staf Personalia.');
+            });
+        } catch (\Exception $e) {
+            // Cleanup files if the transaction fails (even during commit)
+            foreach ($uploadedFiles as $path) {
+                \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+            }
+
+            $msg = $e->getMessage();
+            if ($msg === "INACTIVE") {
+                return back()->withInput()->withErrors(['leave_type_id' => 'Jenis cuti yang Anda pilih saat ini sedang tidak aktif.']);
+            } elseif (str_starts_with($msg, "QUOTA_EXCEEDED:")) {
+                $quota = explode(':', $msg)[1];
+                return back()->withInput()->withErrors(['start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi sisa jatah cuti tersedia Anda ({$quota} hari)."]);
+            } elseif ($msg === "GENDER_REQUIRED") {
+                return back()->withInput()->withErrors(['start_date' => "Silakan lengkapi jenis kelamin Anda terlebih dahulu pada menu Profil Saya sebelum mengajukan Cuti Kawin."]);
+            } elseif (str_starts_with($msg, "KAWIN_EXCEEDED:")) {
+                $parts = explode(':', $msg);
+                return back()->withInput()->withErrors(['start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi batas maksimal Cuti Kawin untuk prajurit/anggota {$parts[2]} (maksimal {$parts[1]} hari kerja). Pelaksanaan cuti menyesuaikan kebijakan atasan."]);
+            } elseif (str_starts_with($msg, "DEFAULT_EXCEEDED:")) {
+                $limit = explode(':', $msg)[1];
+                return back()->withInput()->withErrors(['start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi batas maksimal untuk {$leaveType->name} ({$limit} hari)."]);
+            } elseif ($msg === "UPLOAD_FAILED") {
+                return back()->withInput()->with('error', 'Gagal menyimpan dokumen. Silakan periksa ukuran dan jenis file, lalu coba lagi.');
+            } elseif ($msg === "OVERLAP") {
                 return back()->withInput()->withErrors([
-                    'start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi sisa jatah cuti tersedia Anda ({$entitlement['available_after_pending']} hari).",
+                    'start_date' => 'Anda sudah memiliki pengajuan cuti lain pada rentang tanggal tersebut.',
                 ]);
             }
-        } elseif ($leaveType->code === 'CT_KAWIN') {
-            $personel = $user->personel;
-            $gender = $personel ? $personel->jenis_kelamin : null;
-
-            if (empty($gender)) {
-                return back()->withInput()->withErrors([
-                    'start_date' => "Silakan lengkapi jenis kelamin Anda terlebih dahulu pada menu Profil Saya sebelum mengajukan Cuti Kawin.",
-                ]);
-            }
-
-            $genderLower = strtolower($gender);
-            $isFemale = str_contains($genderLower, 'wanita') || str_contains($genderLower, 'perempuan') || $genderLower === 'p' || $genderLower === 'w';
-            $maxDays = $isFemale ? 6 : 3;
-            $genderLabel = $isFemale ? 'Wanita' : 'Pria';
-
-            if ($workingDays > $maxDays) {
-                return back()->withInput()->withErrors([
-                    'start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi batas maksimal Cuti Kawin untuk prajurit/anggota {$genderLabel} (maksimal {$maxDays} hari kerja). Pelaksanaan cuti menyesuaikan kebijakan atasan.",
-                ]);
-            }
-        } elseif ($leaveType->default_days > 0 && $workingDays > $leaveType->default_days) {
-            return back()->withInput()->withErrors([
-                'start_date' => "Jumlah hari kerja yang diajukan ({$workingDays} hari) melebihi batas maksimal untuk {$leaveType->name} ({$leaveType->default_days} hari).",
-            ]);
+            return back()->withInput()->with('error', 'Terjadi kesalahan teknis saat menyimpan pengajuan, silakan coba lagi.');
         }
-
-        // Check overlapping leave requests
-        $overlap = LeaveRequest::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'approved'])
-            ->where(function ($query) use ($request) {
-                $query->whereBetween('start_date', [$request->start_date, $request->end_date])
-                    ->orWhereBetween('end_date', [$request->start_date, $request->end_date])
-                    ->orWhere(function ($q) use ($request) {
-                        $q->where('start_date', '<=', $request->start_date)
-                            ->where('end_date', '>=', $request->end_date);
-                    });
-            })->exists();
-
-        if ($overlap) {
-            return back()->withInput()->withErrors([
-                'start_date' => 'Anda sudah memiliki pengajuan cuti lain pada rentang tanggal tersebut.',
-            ]);
-        }
-
-        $requestNumber = 'CUTI/' . date('Ymd') . '/' . strtoupper(substr(uniqid(), -5));
-
-        $leaveRequest = LeaveRequest::create([
-            'user_id' => $user->id,
-            'leave_type_id' => $leaveType->id,
-            'request_number' => $requestNumber,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'working_days_count' => $workingDays,
-            'reason' => $request->reason,
-            'tujuan' => $request->tujuan,
-            'pengikut' => $request->pengikut,
-            'kendaraan' => $request->kendaraan,
-            'kodim_koramil' => $request->kodim_koramil,
-            'emergency_contact' => $request->emergency_contact,
-            'status' => 'pending',
-        ]);
-
-        // Save Surat Permohonan
-        if ($request->hasFile('permohonan_document')) {
-            $file = $request->file('permohonan_document');
-            $filename = time() . '_permohonan_' . $file->getClientOriginalName();
-            $path = $file->storeAs('leave_documents', $filename, 'local');
-
-            LeaveRequestDocument::create([
-                'leave_request_id' => $leaveRequest->id,
-                'document_name' => '[Surat Permohonan] ' . $file->getClientOriginalName(),
-                'file_path' => $path,
-                'file_size' => $file->getSize(),
-            ]);
-        }
-
-        // Save Supporting Documents
-        if ($request->hasFile('supporting_documents')) {
-            foreach ($request->file('supporting_documents') as $file) {
-                $filename = time() . '_pendukung_' . $file->getClientOriginalName();
-                $path = $file->storeAs('leave_documents', $filename, 'local');
-
-                LeaveRequestDocument::create([
-                    'leave_request_id' => $leaveRequest->id,
-                    'document_name' => '[Lampiran Pendukung] ' . $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
-                ]);
-            }
-        }
-
-        \App\Helpers\ActivityLogger::log('Pengajuan Cuti', "Mengajukan cuti baru ({$leaveType->name}) mulai " . \Carbon\Carbon::parse($request->start_date)->format('d M Y'));
-
-        return redirect()->route('user.leave.show', $leaveRequest->id)
-            ->with('success', 'Pengajuan cuti berhasil dikirim! Menunggu verifikasi dari Staf Personalia.');
     }
 
     public function show($id)
@@ -525,12 +467,15 @@ class LeaveRequestController extends Controller
             abort(404, 'File Surat Cuti Resmi tidak ditemukan di server.');
         }
 
+        $cleanName = preg_replace('/[^A-Za-z0-9_-]/', '', $leaveRequest->user->personel->nama ?? $leaveRequest->user->name);
+        $downloadName = "Surat_Cuti_" . ($cleanName ?: 'Anggota') . ".docx";
+
         // Fallback for existing public files
         if (!Storage::disk('local')->exists($letter->file_path) && Storage::disk('public')->exists($letter->file_path)) {
-            return Storage::disk('public')->download($letter->file_path);
+            return Storage::disk('public')->download($letter->file_path, $downloadName);
         }
 
-        return Storage::disk('local')->download($letter->file_path);
+        return Storage::disk('local')->download($letter->file_path, $downloadName);
     }
 
     /**
